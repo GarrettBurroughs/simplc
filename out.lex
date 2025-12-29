@@ -1,8 +1,9 @@
 TypeInt@0:0
 Identifier(main)@0:4
 OpenParen@0:8
-CloseParen@0:9
-OpenBrace@0:11
+TypeVoid@0:9
+CloseParen@0:13
+OpenBrace@0:15
 Return@1:4
 IntLiteral(0@1:11
 Semicolon@1:12

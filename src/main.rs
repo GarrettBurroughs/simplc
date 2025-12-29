@@ -1,9 +1,16 @@
-use std::{fs::{self, File}, io::Write, process::exit};
+use std::{
+    fs::{self, File},
+    io::Write,
+    process::exit,
+};
 
 use clap::Parser;
 use thiserror::Error;
 
-use crate::frontend::lexer::{Lexer, TokenLocation};
+use crate::frontend::{
+    ast::AST,
+    lexer::{Lexer, TokenLocation},
+};
 
 mod frontend;
 
@@ -11,6 +18,9 @@ mod frontend;
 enum CompilerError {
     #[error("Lex Error at {0} {1}")]
     LexError(usize, usize),
+
+    #[error("Parse Error at {0} {1} {2}")]
+    ParseError(usize, usize, String),
 }
 
 #[derive(Parser, Debug)]
@@ -49,12 +59,15 @@ fn main() {
                         CompilerError::LexError(row, col) => {
                             eprintln!("Lex error at {} {}", row, col)
                         }
+                        _ => {
+                            eprintln!("Encountered Unexpected Error")
+                        }
                     },
                 }
             }
             if args.lex {
                 if let Ok(mut output_file) = File::create(args.output.clone() + ".lex") {
-                    for tok in tokens {
+                    for tok in &tokens {
                         if args.print {
                             println!("{}", tok);
                         }
@@ -65,6 +78,18 @@ fn main() {
                     eprintln!("Cannot write to {}", args.output.clone() + ".lex");
                     exit(1);
                 }
+            }
+            let mut ast = AST::new(tokens);
+            match ast.parse_program() {
+                Ok(program) => println!("{:?}", program),
+                Err(err) => match err {
+                    CompilerError::ParseError(row, col, expected) => {
+                        eprintln!("Syntax error at {} {}: expected: {}", row, col, expected)
+                    }
+                    _ => {
+                        eprintln!("Encountered Unexpected Error")
+                    }
+                },
             }
         }
         Err(_) => {

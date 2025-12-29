@@ -32,16 +32,33 @@ pub enum Token {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct TokenLocation {
-    token: Token,
-    row: usize, 
-    column: usize,
+    pub token: Token,
+    pub row: usize, 
+    pub column: usize,
+}
+
+impl Token {
+    pub fn debug_string(&self) -> &str {
+        match self {
+            Token::Identifier(_) =>  "Identifier",
+            Token::IntLiteral(_) =>  "IntLiteral",
+            Token::TypeInt =>  "TypeInt",
+            Token::TypeVoid =>  "TypeVoid",
+            Token::Return =>  "Return",
+            Token::OpenParen =>  "OpenParen",
+            Token::CloseParen =>  "CloseParen",
+            Token::OpenBrace =>  "OpenBrace",
+            Token::CloseBrace =>  "CloseBrace",
+            Token::Semicolon =>  "Semicolon",
+        }
+    }
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Token::Identifier(ident) => write!(f, "Identifier({})", ident),
-            Token::IntLiteral(int) => write!(f, "IntLiteral({}", int),
+            Token::IntLiteral(int) => write!(f, "IntLiteral({})", int),
             Token::TypeInt => write!(f, "TypeInt"),
             Token::TypeVoid => write!(f, "TypeVoid"),
             Token::Return => write!(f, "Return"),
