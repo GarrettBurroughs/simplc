@@ -1,0 +1,9 @@
+TypeInt@0:0
+Identifier(main)@0:4
+OpenParen@0:8
+CloseParen@0:9
+OpenBrace@0:11
+Return@1:4
+IntLiteral(0@1:11
+Semicolon@1:12
+CloseBrace@2:0
