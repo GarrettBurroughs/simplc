@@ -1,3 +1,5 @@
+use std::{iter::Peekable, vec::IntoIter};
+
 use crate::{
     CompilerError,
     frontend::lexer::{Token, TokenLocation},
@@ -25,13 +27,12 @@ pub enum Program {
 
 #[derive(Debug)]
 pub struct AST {
-    tokens: Vec<TokenLocation>,
-    location: usize,
+    tokens: Peekable<IntoIter<TokenLocation>>,
 }
 
 impl AST {
-    fn expect(&mut self, expected: Token) -> Result<&TokenLocation, CompilerError> {
-        let t = self.get_token();
+    fn expect(&mut self, expected: Token) -> Result<TokenLocation, CompilerError> {
+        let t = self.tokens.next().ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))?;
 
         if std::mem::discriminant(&t.token) == std::mem::discriminant(&expected) {
             Ok(t)
@@ -44,17 +45,19 @@ impl AST {
         }
     }
 
-    pub fn new(tokens: Vec<TokenLocation>) -> AST {
-        AST {
-            tokens: tokens,
-            location: 0,
+    pub fn new(tokens: Vec<TokenLocation>) -> Self {
+        Self {
+            tokens: tokens.into_iter().peekable(),
         }
     }
 
-    fn get_token(&mut self) -> &TokenLocation {
-        let token = &self.tokens[self.location];
-        self.location += 1;
-        return token;
+    fn peek(&mut self) -> Result<&TokenLocation, CompilerError> {
+        self.tokens.peek().ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))
+
+    }
+
+    fn get_token(&mut self) -> Result<TokenLocation, CompilerError> {
+        self.tokens.next().ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))
     }
 
     pub fn parse_program(&mut self) -> Result<Program, CompilerError> {
@@ -89,7 +92,7 @@ impl AST {
     }
 
     fn parse_expr(&mut self) -> Result<Expression, CompilerError> {
-        let loc = self.get_token();
+        let loc = self.get_token()?;
         let val = match loc.token {
             Token::IntLiteral(val) => val,
             _ => {

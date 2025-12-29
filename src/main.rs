@@ -7,15 +7,12 @@ use std::{
 use clap::Parser;
 use thiserror::Error;
 
-use crate::frontend::{
-    ast::AST,
-    lexer::{Lexer, TokenLocation},
-};
+use crate::frontend::{ast::AST, lexer::Lexer};
 
 mod frontend;
 
 #[derive(Error, Debug, PartialEq, Eq)]
-enum CompilerError {
+pub enum CompilerError {
     #[error("Lex Error at {0} {1}")]
     LexError(usize, usize),
 
@@ -44,56 +41,33 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
+    if let Err(e) = run(args) {
+        eprintln!("{}", e);
+        exit(1);
+    };
+}
 
-    let file_contents = fs::read_to_string(&args.file);
-    match file_contents {
-        Ok(file_contents) => {
-            let mut l = Lexer::new(file_contents.trim().to_string());
-            let mut tokens: Vec<TokenLocation> = Vec::new();
-            while l.has_next_token() {
-                match l.get_next_token() {
-                    Ok(tok) => {
-                        tokens.push(tok);
-                    }
-                    Err(err) => match err {
-                        CompilerError::LexError(row, col) => {
-                            eprintln!("Lex error at {} {}", row, col)
-                        }
-                        _ => {
-                            eprintln!("Encountered Unexpected Error")
-                        }
-                    },
-                }
+fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
+    let contents = fs::read_to_string(&args.file)
+        .map_err(|_| format!("Could not read file: {}", args.file))?;
+
+    let lexer = Lexer::new(&contents);
+    let tokens: Vec<_> = lexer.collect::<Result<Vec<_>, _>>()?;
+
+    if args.lex {
+        let path = format!("{}.lex", args.output);
+        let mut file = File::create(&path)?;
+        for tok in &tokens {
+            if args.print {
+                println!("{}", tok);
             }
-            if args.lex {
-                if let Ok(mut output_file) = File::create(args.output.clone() + ".lex") {
-                    for tok in &tokens {
-                        if args.print {
-                            println!("{}", tok);
-                        }
-                        output_file.write_all(tok.to_string().as_bytes()).unwrap();
-                        output_file.write_all("\n".as_bytes()).unwrap();
-                    }
-                } else {
-                    eprintln!("Cannot write to {}", args.output.clone() + ".lex");
-                    exit(1);
-                }
-            }
-            let mut ast = AST::new(tokens);
-            match ast.parse_program() {
-                Ok(program) => println!("{:?}", program),
-                Err(err) => match err {
-                    CompilerError::ParseError(row, col, expected) => {
-                        eprintln!("Syntax error at {} {}: expected: {}", row, col, expected)
-                    }
-                    _ => {
-                        eprintln!("Encountered Unexpected Error")
-                    }
-                },
-            }
-        }
-        Err(_) => {
-            eprintln!("Cannot open file: {}", &args.file)
+            writeln!(file, "{}", tok)?;
         }
     }
+
+    let mut ast = AST::new(tokens);
+    let program = ast.parse_program()?;
+    println!("{:#?}", program);
+
+    Ok(())
 }

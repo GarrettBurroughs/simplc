@@ -1,8 +1,8 @@
-use std::fmt;
+use std::{fmt, iter::Peekable, str::Chars};
 
 use crate::CompilerError;
-pub struct Lexer { contents: Vec<char>,
-    location: usize,
+pub struct Lexer<'a> {
+    chars: Peekable<Chars<'a>>,
     row: usize,
     column: usize,
 }
@@ -33,23 +33,23 @@ pub enum Token {
 #[derive(Debug, PartialEq, Eq)]
 pub struct TokenLocation {
     pub token: Token,
-    pub row: usize, 
+    pub row: usize,
     pub column: usize,
 }
 
 impl Token {
     pub fn debug_string(&self) -> &str {
         match self {
-            Token::Identifier(_) =>  "Identifier",
-            Token::IntLiteral(_) =>  "IntLiteral",
-            Token::TypeInt =>  "TypeInt",
-            Token::TypeVoid =>  "TypeVoid",
-            Token::Return =>  "Return",
-            Token::OpenParen =>  "OpenParen",
-            Token::CloseParen =>  "CloseParen",
-            Token::OpenBrace =>  "OpenBrace",
-            Token::CloseBrace =>  "CloseBrace",
-            Token::Semicolon =>  "Semicolon",
+            Token::Identifier(_) => "Identifier",
+            Token::IntLiteral(_) => "IntLiteral",
+            Token::TypeInt => "TypeInt",
+            Token::TypeVoid => "TypeVoid",
+            Token::Return => "Return",
+            Token::OpenParen => "OpenParen",
+            Token::CloseParen => "CloseParen",
+            Token::OpenBrace => "OpenBrace",
+            Token::CloseBrace => "CloseBrace",
+            Token::Semicolon => "Semicolon",
         }
     }
 }
@@ -77,96 +77,107 @@ impl fmt::Display for TokenLocation {
     }
 }
 
-impl Lexer {
-    pub fn new(input: String) -> Lexer {
-        Lexer {
-            contents: input.chars().collect(),
-            location: 0,
+impl<'a> Lexer<'a> {
+    pub fn new(input: &'a String) -> Self {
+        Self {
+            chars: input.chars().peekable(),
             row: 0,
             column: 0,
         }
     }
 
-    pub fn has_next_token(&self) -> bool {
-        self.location < self.contents.len()
+    fn next_char(&mut self) -> Option<char> {
+        let c = self.chars.next()?;
+        if c == '\n' {
+            self.row += 1;
+            self.column = 0;
+        } else {
+            self.column += 1
+        }
+        Some(c)
     }
+}
 
-    fn increment_location(&mut self) {
-        self.location += 1;
-        self.column += 1;
-    }
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Result<TokenLocation, CompilerError>;
 
-    pub fn get_next_token(&mut self) -> Result<TokenLocation, CompilerError> {
-        while self.contents[self.location].is_whitespace() {
-            if self.contents[self.location] == '\n' {
-                self.column = 0;
-                self.row += 1;
-                self.location += 1;
-            } else {
-                self.increment_location();
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(&c) = self.chars.peek() {
+            if !c.is_whitespace() {
+                break;
             }
-
+            self.next_char();
         }
 
-        // Identifier/Keyword
-        if self.contents[self.location].is_alphabetic() || self.contents[self.location] == '_' {
-            let start = self.location;
-            let start_column = self.column;
-            while self.contents[self.location].is_alphanumeric()
-                || self.contents[self.location] == '_'
-            {
-                self.increment_location();
-            }
-            let matched: String = self.contents[start..self.location].iter().collect();
-            let tok = match matched.as_str() {
-                "int" => Token::TypeInt,
-                "void" => Token::TypeVoid,
-                "return" => Token::Return,
-                _ => Token::Identifier(matched),
-            };
-            return Ok(TokenLocation { token: tok, row: self.row, column: start_column})
-        }
+        let start_row = self.row;
+        let start_column = self.column;
+        let c = self.chars.peek()?;
 
-        if self.contents[self.location].is_numeric() {
-            let start = self.location;
-            let start_column = self.column;
-            while self.contents[self.location].is_numeric() {
-                self.increment_location();
-            }
-
-            // Ensure integer literals end at a line break
-            if self.location + 1 < self.contents.len() {
-                let trailing = self.contents[self.location + 1];
-                if !(trailing.is_whitespace() || trailing == ';') {
-                    return Err(CompilerError::LexError(self.row, start_column))
+        // Keywords/Identifiers
+        if c.is_alphabetic() || *c == '_' {
+            let mut ident = String::new();
+            while let Some(&c) = self.chars.peek() {
+                if c.is_alphanumeric() || c == '_' {
+                    ident.push(self.next_char().unwrap());
+                } else {
+                    break;
                 }
             }
 
-            let matched: String = self.contents[start..self.location].iter().collect();
-            let tok = Token::IntLiteral(matched.parse::<i32>().unwrap());
-            return Ok(TokenLocation { token: tok, row: self.row, column: start_column})
+            let tok = match ident.as_str() {
+                "int" => Token::TypeInt,
+                "void" => Token::TypeVoid,
+                "return" => Token::Return,
+                _ => Token::Identifier(ident),
+            };
+
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
         }
 
-        let tok = match self.contents[self.location] {
+        // Int literals
+        if c.is_numeric() {
+            let mut num_str = String::new();
+            while let Some(&c) = self.chars.peek() {
+                if c.is_numeric() {
+                    num_str.push(self.next_char().unwrap());
+                } else {
+                    if let Some(&n) = self.chars.peek() {
+                        if !(n.is_whitespace() || n == ';') {
+                            return Some(Err(CompilerError::LexError(start_row, start_column)))
+                        }
+                    }
+                    break;
+                }
+            }
+
+            let val = num_str.parse().unwrap();
+
+            return Some(Ok(TokenLocation {
+                token: Token::IntLiteral(val),
+                row: start_row,
+                column: start_column,
+            }));
+        }
+
+        let tok = match self.next_char().unwrap() {
             '(' => Token::OpenParen,
             ')' => Token::CloseParen,
             '{' => Token::OpenBrace,
             '}' => Token::CloseBrace,
             ';' => Token::Semicolon,
-            _ => {
-                let column = self.column;
-                self.increment_location();  
-                return Err(CompilerError::LexError(self.row, column))
-            },
+            _ => return Some(Err(CompilerError::LexError(start_row, start_column))),
         };
-
-        let row = self.row;
-        let column = self.column;
-        self.increment_location();
-        return Ok(TokenLocation { token: tok, row: row, column: column})
+        return Some(Ok(TokenLocation {
+            token: tok,
+            row: start_row,
+            column: start_column,
+        }));
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -176,24 +187,57 @@ mod tests {
     #[test]
     fn lex_full_program_suceeds() {
         let s = String::from("int main() {\n\treturn 0;\n}");
-        let mut l = Lexer::new(s);
-        let mut tokens: Vec<TokenLocation> = Vec::new();
+        let l = Lexer::new(&s);
 
-        while l.has_next_token() {
-            let tok = l.get_next_token().unwrap();
-            tokens.push(tok);
-        }
+        let tokens: Vec<_> = l.collect::<Result<Vec<_>, _>>().unwrap();
+
 
         let expected = vec![
-            TokenLocation{ token: Token::TypeInt, row: 0, column: 0 },
-            TokenLocation{ token: Token::Identifier(String::from("main")), row: 0, column: 4 },
-            TokenLocation{ token: Token::OpenParen, row: 0, column: 8 },
-            TokenLocation{ token: Token::CloseParen, row: 0, column: 9 },
-            TokenLocation{ token: Token::OpenBrace, row: 0, column: 11 },
-            TokenLocation{ token: Token::Return, row: 1, column: 1 },
-            TokenLocation{ token: Token::IntLiteral(0), row: 1, column: 8 },
-            TokenLocation{ token: Token::Semicolon, row: 1, column: 9 },
-            TokenLocation{ token: Token::CloseBrace, row: 2, column: 0 },
+            TokenLocation {
+                token: Token::TypeInt,
+                row: 0,
+                column: 0,
+            },
+            TokenLocation {
+                token: Token::Identifier(String::from("main")),
+                row: 0,
+                column: 4,
+            },
+            TokenLocation {
+                token: Token::OpenParen,
+                row: 0,
+                column: 8,
+            },
+            TokenLocation {
+                token: Token::CloseParen,
+                row: 0,
+                column: 9,
+            },
+            TokenLocation {
+                token: Token::OpenBrace,
+                row: 0,
+                column: 11,
+            },
+            TokenLocation {
+                token: Token::Return,
+                row: 1,
+                column: 1,
+            },
+            TokenLocation {
+                token: Token::IntLiteral(0),
+                row: 1,
+                column: 8,
+            },
+            TokenLocation {
+                token: Token::Semicolon,
+                row: 1,
+                column: 9,
+            },
+            TokenLocation {
+                token: Token::CloseBrace,
+                row: 2,
+                column: 0,
+            },
         ];
         assert_eq!(expected, tokens)
     }
@@ -201,28 +245,20 @@ mod tests {
     #[test]
     fn lex_should_error_invalid_identifier() {
         let s = String::from("int 0main() {\n\treturn 0;\n}");
-        let mut l = Lexer::new(s);
+        let l = Lexer::new(&s);
 
-        while l.has_next_token() {
-            let tok = l.get_next_token();
-            match tok {
-                Ok(_) => (),
-                Err(err) => assert_eq!(CompilerError::LexError(0, 4), err),
-            };
-        }
+        let err: Result<Vec<_>, CompilerError> = l.collect::<Result<Vec<_>, _>>();
+        assert_eq!(CompilerError::LexError(0, 4), err.unwrap_err())
+
     }
 
     #[test]
     fn lex_should_error_invalid_character() {
         let s = String::from("int main() {\n\treturn $;\n}");
-        let mut l = Lexer::new(s);
 
-        while l.has_next_token() {
-            let tok = l.get_next_token();
-            match tok {
-                Ok(_) => (),
-                Err(err) => assert_eq!(CompilerError::LexError(1, 8), err),
-            };
-        }
+        let l = Lexer::new(&s);
+
+        let err: Result<Vec<_>, CompilerError> = l.collect::<Result<Vec<_>, _>>();
+        assert_eq!(CompilerError::LexError(1, 8), err.unwrap_err())
     }
 }
