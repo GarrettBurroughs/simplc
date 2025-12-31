@@ -30,4 +30,9 @@ gcc "$ASSEMBLY_FILE" -o "$EXECUTABLE_NAME"
 # 6. Cleanup (Optional)
 # rm "${BASE_NAME}.i" "$ASSEMBLY_FILE"
 
+./$EXECUTABLE_NAME
+
+echo $?
 echo "Build successful: $EXECUTABLE_NAME"
+
+

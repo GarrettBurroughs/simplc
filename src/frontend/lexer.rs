@@ -21,6 +21,8 @@ pub enum Token {
     TypeVoid,
     // return
     Return,
+    Decrement,
+    Increment,
 
     // Characters
     OpenParen,
@@ -28,6 +30,9 @@ pub enum Token {
     OpenBrace,
     CloseBrace,
     Semicolon,
+    BitwiseCompliment,
+    Minus,
+    Plus,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -50,6 +55,11 @@ impl Token {
             Token::OpenBrace => "OpenBrace",
             Token::CloseBrace => "CloseBrace",
             Token::Semicolon => "Semicolon",
+            Token::Increment => "Increment",
+            Token::Decrement => "Decrement",
+            Token::BitwiseCompliment => "BitwiseCompliment",
+            Token::Minus => "Minus",
+            Token::Plus => "Plus",
         }
     }
 }
@@ -67,6 +77,11 @@ impl fmt::Display for Token {
             Token::OpenBrace => write!(f, "OpenBrace"),
             Token::CloseBrace => write!(f, "CloseBrace"),
             Token::Semicolon => write!(f, "Semicolon"),
+            Token::Increment => write!(f, "Increment"),
+            Token::Decrement => write!(f, "Decrement"),
+            Token::BitwiseCompliment => write!(f, "BitwiseCompliment"),
+            Token::Minus => write!(f, "Minus"),
+            Token::Plus => write!(f, "Plus"),
         }
     }
 }
@@ -102,73 +117,126 @@ impl<'a> Iterator for Lexer<'a> {
     type Item = Result<TokenLocation, CompilerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        println!("Lexing {:?}", self.chars.peek());
         while let Some(&c) = self.chars.peek() {
             if !c.is_whitespace() {
                 break;
             }
             self.next_char();
         }
+        if let None = self.chars.peek() {
+            return None;
+        }
 
         let start_row = self.row;
         let start_column = self.column;
-        let c = self.chars.peek()?;
+
 
         // Keywords/Identifiers
-        if c.is_alphabetic() || *c == '_' {
-            let mut ident = String::new();
-            while let Some(&c) = self.chars.peek() {
-                if c.is_alphanumeric() || c == '_' {
-                    ident.push(self.next_char().unwrap());
-                } else {
-                    break;
+        if let Some(&peeked_char) = self.chars.peek() {
+            if peeked_char.is_alphabetic() || peeked_char == '_' {
+                let mut ident = String::new();
+                while let Some(&c) = self.chars.peek() {
+                    if c.is_alphanumeric() || c == '_' {
+                        ident.push(self.next_char().unwrap());
+                    } else {
+                        break;
+                    }
                 }
+
+                let tok = match ident.as_str() {
+                    "int" => Token::TypeInt,
+                    "void" => Token::TypeVoid,
+                    "return" => Token::Return,
+                    _ => Token::Identifier(ident),
+                };
+
+                return Some(Ok(TokenLocation {
+                    token: tok,
+                    row: start_row,
+                    column: start_column,
+                }));
             }
-
-            let tok = match ident.as_str() {
-                "int" => Token::TypeInt,
-                "void" => Token::TypeVoid,
-                "return" => Token::Return,
-                _ => Token::Identifier(ident),
-            };
-
-            return Some(Ok(TokenLocation {
-                token: tok,
-                row: start_row,
-                column: start_column,
-            }));
         }
+
 
         // Int literals
-        if c.is_numeric() {
-            let mut num_str = String::new();
-            while let Some(&c) = self.chars.peek() {
-                if c.is_numeric() {
-                    num_str.push(self.next_char().unwrap());
-                } else {
-                    if let Some(&n) = self.chars.peek() {
-                        if !(n.is_whitespace() || n == ';') {
-                            return Some(Err(CompilerError::LexError(start_row, start_column)))
+        if let Some(&peeked_char) = self.chars.peek() {
+            if peeked_char.is_numeric() {
+                let mut num_str = String::new();
+                while let Some(&c) = self.chars.peek() {
+                    if c.is_numeric() {
+                        num_str.push(self.next_char().unwrap());
+                    } else {
+                        if let Some(&n) = self.chars.peek() {
+                            if !(n.is_whitespace() || n == ';') {
+                                return Some(Err(CompilerError::LexError(start_row, start_column)));
+                            }
                         }
+                        break;
                     }
-                    break;
                 }
+
+                let val = num_str.parse().unwrap();
+
+                return Some(Ok(TokenLocation {
+                    token: Token::IntLiteral(val),
+                    row: start_row,
+                    column: start_column,
+                }));
             }
-
-            let val = num_str.parse().unwrap();
-
-            return Some(Ok(TokenLocation {
-                token: Token::IntLiteral(val),
-                row: start_row,
-                column: start_column,
-            }));
         }
 
+
+        // Increment/Decrement
+        if let Some(&first_char) = self.chars.peek() {
+            if first_char == '-' {
+                self.next_char();
+                if let Some(&second_char) = self.chars.peek() {
+                    if second_char == '-' {
+                        self.next_char();
+                        return Some(Ok(TokenLocation {
+                            token: Token::Decrement,
+                            row: start_row,
+                            column: start_column,
+                        }));
+                    }
+                }
+
+                return Some(Ok(TokenLocation {
+                    token: Token::Minus,
+                    row: start_row,
+                    column: start_column,
+                }));
+            }
+
+            if first_char == '+' {
+                self.next_char(); 
+                if let Some(&second_char) = self.chars.peek() {
+                    if second_char == '+' {
+                        self.next_char(); // Consume the second '+'
+                        return Some(Ok(TokenLocation {
+                            token: Token::Increment,
+                            row: start_row,
+                            column: start_column,
+                        }));
+                    }
+                }
+                return Some(Ok(TokenLocation {
+                    token: Token::Plus,
+                    row: start_row,
+                    column: start_column,
+                }));
+            }
+        }
+        
         let tok = match self.next_char().unwrap() {
             '(' => Token::OpenParen,
             ')' => Token::CloseParen,
             '{' => Token::OpenBrace,
             '}' => Token::CloseBrace,
             ';' => Token::Semicolon,
+            '~' => Token::BitwiseCompliment,
             _ => return Some(Err(CompilerError::LexError(start_row, start_column))),
         };
         return Some(Ok(TokenLocation {
@@ -190,7 +258,6 @@ mod tests {
         let l = Lexer::new(&s);
 
         let tokens: Vec<_> = l.collect::<Result<Vec<_>, _>>().unwrap();
-
 
         let expected = vec![
             TokenLocation {
@@ -249,7 +316,6 @@ mod tests {
 
         let err: Result<Vec<_>, CompilerError> = l.collect::<Result<Vec<_>, _>>();
         assert_eq!(CompilerError::LexError(0, 4), err.unwrap_err())
-
     }
 
     #[test]

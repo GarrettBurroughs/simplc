@@ -1,15 +1,15 @@
 use std::{
-    fs::{self, File},
-    io::Write,
-    process::exit,
+    fs::{self, File}, io::Write, path::{PathBuf}, process::exit
 };
 
 use clap::Parser;
+use inkwell::context::Context;
 use thiserror::Error;
 
 use crate::frontend::{ast::AST, lexer::Lexer};
 
 mod frontend;
+mod codegen;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum CompilerError {
@@ -31,12 +31,24 @@ struct Args {
     lex: bool,
 
     /// Output file location
-    #[arg(short, long, default_value = "out")]
-    output: String,
+    #[arg(short, long)]
+    output: Option<String>,
 
     /// Print output to stdout
     #[arg(short, long)]
     print: bool,
+
+    /// Output LLVM Ir
+    #[arg(long)]
+    ir: bool,
+
+    /// Output assembly
+    #[arg(long)]
+    asm: bool,
+
+    // Output AST
+    #[arg(long)]
+    ast: bool,
 }
 
 fn main() {
@@ -48,6 +60,17 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
+    let binding = if let Some(out) = args.output {
+        PathBuf::from(out)
+    } else {
+        let mut path = PathBuf::from(&args.file);
+        path.set_extension(""); 
+        path
+    };
+
+    let output_name = 
+        binding.to_str().unwrap_or("out");
+
     let contents = fs::read_to_string(&args.file)
         .map_err(|_| format!("Could not read file: {}", args.file))?;
 
@@ -55,7 +78,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let tokens: Vec<_> = lexer.collect::<Result<Vec<_>, _>>()?;
 
     if args.lex {
-        let path = format!("{}.lex", args.output);
+        let path = format!("{}.lex", output_name);
         let mut file = File::create(&path)?;
         for tok in &tokens {
             if args.print {
@@ -67,7 +90,35 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut ast = AST::new(tokens);
     let program = ast.parse_program()?;
-    println!("{:#?}", program);
+    if args.ast {
+        if args.print {
+            println!("{:#?}", program);
+        }
+
+        let path = format!("{}.ast", output_name);
+        let mut file = File::create(&path)?;
+        writeln!(file, "{:#?}", program)?;
+    }
+
+    let context = Context::create();
+    let generator = codegen::codegen::CodeGen::new(&context, "main");
+    generator.run_codegen(&program);
+
+    if args.ir {
+        let ir = generator.emit_ir();
+        if args.print {
+            println!("Intermediate Representation: \n {}", ir);
+        }
+        let path = format!("{}.ll", output_name);
+        let mut file = File::create(&path)?;
+        writeln!(file, "{}", ir)?;
+    }
+
+    
+    let buf = generator.emit_assmebly()?;
+    let path = format!("{}.s", output_name);
+    let mut file = File::create(&path)?;
+    file.write_all(buf.as_slice())?;
 
     Ok(())
 }
