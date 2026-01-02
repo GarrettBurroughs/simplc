@@ -13,6 +13,8 @@ pub enum Statement {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expression {
     IntLiteral(i32),
+    UnaryExpr(Token, Box<Expression>),
+    BinaryExpr(Token, Box<Expression>, Box<Expression>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -31,17 +33,30 @@ pub struct AST {
 }
 
 impl AST {
+
+    fn precedence(tok: &Token) -> u32 {
+        match tok {
+            Token::LogicalOr => 4,
+            Token::LogicalAnd => 5,
+            Token::BitwiseOr => 6,
+            Token::BitwiseXOR => 7,
+            Token::BitwiseAnd => 8,
+            Token::LeftShift | Token::RightShift => 11,
+            Token::Plus | Token::Minus => 12,
+            Token::Div | Token::Mul | Token::Percent => 13,
+            _ => panic!("Cannot take precedence of {}", tok),
+        }
+
+    }
+
     fn expect(&mut self, expected: Token) -> Result<TokenLocation, CompilerError> {
-        let t = self.tokens.next().ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))?;
+        let t = self.get_token()?;
 
         if std::mem::discriminant(&t.token) == std::mem::discriminant(&expected) {
             Ok(t)
         } else {
-            Err(CompilerError::ParseError(
-                t.row,
-                t.column,
-                expected.debug_string().to_string(),
-            ))
+
+            Err(CompilerError::ParseError(t.row, t.column, format!("Unexpected token {} expected {}", t.token, expected.debug_string())))
         }
     }
 
@@ -57,7 +72,11 @@ impl AST {
     }
 
     fn get_token(&mut self) -> Result<TokenLocation, CompilerError> {
-        self.tokens.next().ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))
+        let tok = self.tokens.next().ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))?;
+        if let Token::Comment(_) = tok.token {
+            return self.get_token();
+        }
+        Ok(tok)
     }
 
     pub fn parse_program(&mut self) -> Result<Program, CompilerError> {
@@ -86,27 +105,53 @@ impl AST {
 
     fn parse_statement(&mut self) -> Result<Statement, CompilerError> {
         self.expect(Token::Return)?;
-        let expr = self.parse_expr()?;
+        let expr = self.parse_expr(0)?;
         self.expect(Token::Semicolon)?;
         return Ok(Statement::Return(expr));
     }
 
-    fn parse_expr(&mut self) -> Result<Expression, CompilerError> {
-        let loc = self.get_token()?;
-        let val = match loc.token {
-            Token::IntLiteral(val) => val,
-            _ => {
-                return Err(CompilerError::ParseError(
-                    loc.row,
-                    loc.column,
-                    Token::IntLiteral(0).debug_string().to_string(),
-                ));
+    fn parse_factor(&mut self) -> Result<Expression, CompilerError> {
+        let next_token = self.get_token()?;
+        match next_token.token {
+            Token::IntLiteral(val) => {
+                Ok(Expression::IntLiteral(val))
+            },
+            Token::Minus | Token::BitwiseCompliment => {
+                let expr = self.parse_factor()?;
+                Ok(Expression::UnaryExpr(next_token.token.clone(), Box::new(expr)))
+            },
+            Token::OpenParen => {
+                let inner_expr = self.parse_expr(0);
+                self.expect(Token::CloseParen)?;
+                inner_expr
             }
-        };
-        return Ok(Expression::IntLiteral(val));
+            _ => Err(CompilerError::ParseError(next_token.row, next_token.column, format!("Unexpected token {}", next_token.token)))
+        }
     }
-}
 
+    fn parse_expr(&mut self, min_precedence: u32) -> Result<Expression, CompilerError> {
+        let mut left = self.parse_factor()?;
+        while let Ok(tok) = self.peek() {
+            if !tok.token.is_binop() {
+                break;
+            }
+            let next_precedence = AST::precedence(&tok.token);
+            if next_precedence < min_precedence {
+                break
+            }
+            let operator = self.parse_unop()?;
+            let right = self.parse_expr(next_precedence + 1)?;
+            left = Expression::BinaryExpr(operator, Box::new(left), Box::new(right));
+        }
+        Ok(left)
+    }
+
+    fn parse_unop(&mut self) -> Result<Token, CompilerError> {
+        let operator = self.get_token()?.token;
+        Ok(operator)
+    }
+
+}
 #[cfg(test)]
 mod tests {
     use super::*;

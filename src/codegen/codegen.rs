@@ -1,3 +1,5 @@
+use std::panic;
+
 use inkwell::{
     OptimizationLevel,
     builder::Builder,
@@ -9,7 +11,10 @@ use inkwell::{
     values::{AnyValue, AnyValueEnum},
 };
 
-use crate::frontend::ast::{Expression, Function, Program, Statement};
+use crate::frontend::{
+    ast::{Expression, Function, Program, Statement},
+    lexer::Token,
+};
 
 pub struct CodeGen<'ctx> {
     context: &'ctx Context,
@@ -43,7 +48,7 @@ impl<'ctx> CodeGen<'ctx> {
                 &target_triple,
                 "generic",
                 "",
-                OptimizationLevel::Default,
+                OptimizationLevel::None,
                 RelocMode::Default,
                 CodeModel::Default,
             )
@@ -110,6 +115,46 @@ impl<'ctx> CodeGenerator<'ctx> for Expression {
             Expression::IntLiteral(val) => {
                 i64_type.const_int(*val as u64, false).as_any_value_enum()
             }
+            Expression::UnaryExpr(token, expression) => {
+                let expr = expression.codegen(codegen);
+                let int_val = match expr {
+                    AnyValueEnum::IntValue(int_value) => int_value,
+                    _ => panic!("Invalid value in unary expr {}", expr),
+                };
+                match token {
+                    Token::Minus => codegen
+                        .builder
+                        .build_int_neg(int_val, "name")
+                        .unwrap()
+                        .as_any_value_enum(),
+                    Token::BitwiseCompliment => codegen
+                        .builder
+                        .build_not(int_val, "name")
+                        .unwrap()
+                        .as_any_value_enum(),
+                    _ => panic!("Unexpected token in UnaryExpr {}", token),
+                }
+            }
+            Expression::BinaryExpr(op, left, right) => {
+                let lhs = left.codegen(codegen);
+                let rhs = right.codegen(codegen);
+                if let AnyValueEnum::IntValue(l) = lhs && let AnyValueEnum::IntValue(r) = rhs {
+                    match op {
+                        Token::Plus => { codegen.builder.build_int_add(l, r, "add") },
+                        Token::Minus => { codegen.builder.build_int_sub(l, r, "sub") },
+                        Token::Mul => { codegen.builder.build_int_mul(l, r, "mul") },
+                        Token::Div => { codegen.builder.build_int_signed_div(l, r, "div") },
+                        Token::BitwiseAnd => { codegen.builder.build_and(l, r, "and") },
+                        Token::BitwiseOr => { codegen.builder.build_or(l, r, "or") },
+                        Token::BitwiseXOR => { codegen.builder.build_xor(l, r, "xor") },
+                        Token::LeftShift => { codegen.builder.build_left_shift(l, r, "shift_left") },
+                        Token::RightShift => { codegen.builder.build_right_shift(l, r, true,"shift_right") },
+                        _ => panic!("Invalid binary expression operator {}", op)
+                    }
+                } else {
+                    panic!("Invalid arguments to binary expr {:?} {} {:?}", left, op, right)
+                }.unwrap().as_any_value_enum()
+            },
         }
     }
 }

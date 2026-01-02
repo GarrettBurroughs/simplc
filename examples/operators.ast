@@ -1,0 +1,16 @@
+Program(
+    Function(
+        "main",
+        Return(
+            BinaryExpr(
+                BitwiseOr,
+                IntLiteral(
+                    1,
+                ),
+                IntLiteral(
+                    1,
+                ),
+            ),
+        ),
+    ),
+)

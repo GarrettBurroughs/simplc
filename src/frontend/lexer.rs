@@ -7,32 +7,44 @@ pub struct Lexer<'a> {
     column: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-    // [a-zA-Z_]\w*\b
-    Identifier(String),
-    // [0-9]+\b
-    IntLiteral(i32),
+    Identifier(String), // [a-zA-Z_]\w*\b
+    IntLiteral(i32),    // [0-9]+\b
 
     // Keywords
-    // int
-    TypeInt,
-    // void
-    TypeVoid,
-    // return
-    Return,
-    Decrement,
-    Increment,
+    TypeInt,  // int
+    TypeVoid, // void
+    Return,   // return
+
+    // Repeated tokens
+    Increment,  // ++
+    Decrement,  // --
+    LogicalAnd, // &&
+    LogicalOr,  // ||
+    LeftShift,  // <<
+    RightShift, // >>
+
+    Plus,        // +
+    Minus,       // -
+    BitwiseAnd,  // &
+    BitwiseOr,   // |
+    LessThan,    // <
+    GreaterThan, //>
+
+    Comment(String), // //\c*\n
 
     // Characters
-    OpenParen,
-    CloseParen,
-    OpenBrace,
-    CloseBrace,
-    Semicolon,
-    BitwiseCompliment,
-    Minus,
-    Plus,
+    OpenParen,         // (
+    CloseParen,        // )
+    OpenBrace,         // {
+    CloseBrace,        // }
+    Semicolon,         // ;
+    BitwiseCompliment, // ~
+    Div,               // /
+    Mul,               // *
+    Percent,           // %
+    BitwiseXOR,        // ^
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -60,6 +72,35 @@ impl Token {
             Token::BitwiseCompliment => "BitwiseCompliment",
             Token::Minus => "Minus",
             Token::Plus => "Plus",
+            Token::Comment(_) => "Comment",
+            Token::Div => "Div",
+            Token::Mul => "Mul",
+            Token::Percent => "Percent",
+            Token::LogicalAnd => "LogicalAnd",
+            Token::LogicalOr => "LogicalOr",
+            Token::LeftShift => "LeftShift",
+            Token::RightShift => "RightShift",
+            Token::BitwiseAnd => "BitwiseAnd",
+            Token::BitwiseOr => "BitwiseOr",
+            Token::LessThan => "LessThan",
+            Token::GreaterThan => "GreaterThan",
+            Token::BitwiseXOR => "BitwiseXOR",
+        }
+    }
+
+    pub fn is_binop(&self) -> bool {
+        match self {
+            Token::Plus
+            | Token::Minus
+            | Token::Div
+            | Token::Mul
+            | Token::Percent
+            | Token::BitwiseOr
+            | Token::BitwiseAnd
+            | Token::BitwiseXOR
+            | Token::LeftShift
+            | Token::RightShift => true,
+            _ => false,
         }
     }
 }
@@ -82,6 +123,19 @@ impl fmt::Display for Token {
             Token::BitwiseCompliment => write!(f, "BitwiseCompliment"),
             Token::Minus => write!(f, "Minus"),
             Token::Plus => write!(f, "Plus"),
+            Token::Div => write!(f, "Div"),
+            Token::Mul => write!(f, "Mul"),
+            Token::Percent => write!(f, "Percent"),
+            Token::Comment(comment) => write!(f, "Comment({})", comment),
+            Token::LogicalAnd => write!(f, "LogicalAnd"),
+            Token::LogicalOr => write!(f, "LogicalOr"),
+            Token::LeftShift => write!(f, "LeftShift"),
+            Token::RightShift => write!(f, "RightShift"),
+            Token::BitwiseAnd => write!(f, "BitwiseAnd"),
+            Token::BitwiseOr => write!(f, "BitwiseOr"),
+            Token::LessThan => write!(f, "LessThan"),
+            Token::GreaterThan => write!(f, "GreaterThan"),
+            Token::BitwiseXOR => write!(f, "BitwiseXOR"),
         }
     }
 }
@@ -111,13 +165,34 @@ impl<'a> Lexer<'a> {
         }
         Some(c)
     }
+
+    fn lex_repeated(
+        &mut self,
+        first: char,
+        second: char,
+        first_tok: Token,
+        second_tok: Token,
+    ) -> Option<Token> {
+        if let Some(&first_char) = self.chars.peek() {
+            if first_char == first {
+                self.next_char();
+                if let Some(&second_char) = self.chars.peek() {
+                    if second_char == second {
+                        self.next_char();
+                        return Some(second_tok);
+                    }
+                }
+                return Some(first_tok);
+            }
+        }
+        None
+    }
 }
 
 impl<'a> Iterator for Lexer<'a> {
     type Item = Result<TokenLocation, CompilerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        println!("Lexing {:?}", self.chars.peek());
         while let Some(&c) = self.chars.peek() {
             if !c.is_whitespace() {
                 break;
@@ -130,7 +205,6 @@ impl<'a> Iterator for Lexer<'a> {
 
         let start_row = self.row;
         let start_column = self.column;
-
 
         // Keywords/Identifiers
         if let Some(&peeked_char) = self.chars.peek() {
@@ -159,6 +233,41 @@ impl<'a> Iterator for Lexer<'a> {
             }
         }
 
+        // Comments
+        if let Some(&peeked_char) = self.chars.peek() {
+            if peeked_char == '/' {
+                self.next_char();
+                if let Some(&c) = self.chars.peek() {
+                    if c == '/' {
+                        // Lex comment until newline
+                        self.next_char();
+                        let mut comment_str = String::new();
+                        while let Some(c) = self.next_char() {
+                            if c == '\n' {
+                                return Some(Ok(TokenLocation {
+                                    token: Token::Comment(comment_str),
+                                    row: start_row,
+                                    column: start_column,
+                                }));
+                            }
+                            comment_str.push(c);
+                        }
+                    } else {
+                        return Some(Ok(TokenLocation {
+                            token: Token::Div,
+                            row: start_row,
+                            column: start_column,
+                        }));
+                    }
+                } else {
+                    return Some(Ok(TokenLocation {
+                        token: Token::Div,
+                        row: start_row,
+                        column: start_column,
+                    }));
+                }
+            }
+        }
 
         // Int literals
         if let Some(&peeked_char) = self.chars.peek() {
@@ -169,7 +278,7 @@ impl<'a> Iterator for Lexer<'a> {
                         num_str.push(self.next_char().unwrap());
                     } else {
                         if let Some(&n) = self.chars.peek() {
-                            if !(n.is_whitespace() || n == ';') {
+                            if !(n.is_whitespace() || n == ';' || n == ')') {
                                 return Some(Err(CompilerError::LexError(start_row, start_column)));
                             }
                         }
@@ -187,49 +296,54 @@ impl<'a> Iterator for Lexer<'a> {
             }
         }
 
-
-        // Increment/Decrement
-        if let Some(&first_char) = self.chars.peek() {
-            if first_char == '-' {
-                self.next_char();
-                if let Some(&second_char) = self.chars.peek() {
-                    if second_char == '-' {
-                        self.next_char();
-                        return Some(Ok(TokenLocation {
-                            token: Token::Decrement,
-                            row: start_row,
-                            column: start_column,
-                        }));
-                    }
-                }
-
-                return Some(Ok(TokenLocation {
-                    token: Token::Minus,
-                    row: start_row,
-                    column: start_column,
-                }));
-            }
-
-            if first_char == '+' {
-                self.next_char(); 
-                if let Some(&second_char) = self.chars.peek() {
-                    if second_char == '+' {
-                        self.next_char(); // Consume the second '+'
-                        return Some(Ok(TokenLocation {
-                            token: Token::Increment,
-                            row: start_row,
-                            column: start_column,
-                        }));
-                    }
-                }
-                return Some(Ok(TokenLocation {
-                    token: Token::Plus,
-                    row: start_row,
-                    column: start_column,
-                }));
-            }
+        if let Some(tok) = self.lex_repeated('+', '+', Token::Plus, Token::Increment) {
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
         }
-        
+
+        if let Some(tok) = self.lex_repeated('-', '-', Token::Minus, Token::Decrement) {
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
+        }
+
+        if let Some(tok) = self.lex_repeated('&', '&', Token::BitwiseAnd, Token::LogicalAnd) {
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
+        }
+
+        if let Some(tok) = self.lex_repeated('|', '|', Token::BitwiseOr, Token::LogicalOr) {
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
+        }
+
+        if let Some(tok) = self.lex_repeated('>', '>', Token::GreaterThan, Token::RightShift) {
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
+        }
+
+        if let Some(tok) = self.lex_repeated('<', '<', Token::LessThan, Token::LeftShift) {
+            return Some(Ok(TokenLocation {
+                token: tok,
+                row: start_row,
+                column: start_column,
+            }));
+        }
+
         let tok = match self.next_char().unwrap() {
             '(' => Token::OpenParen,
             ')' => Token::CloseParen,
@@ -237,8 +351,12 @@ impl<'a> Iterator for Lexer<'a> {
             '}' => Token::CloseBrace,
             ';' => Token::Semicolon,
             '~' => Token::BitwiseCompliment,
+            '*' => Token::Mul,
+            '%' => Token::Percent,
+            '^' => Token::BitwiseXOR,
             _ => return Some(Err(CompilerError::LexError(start_row, start_column))),
         };
+
         return Some(Ok(TokenLocation {
             token: tok,
             row: start_row,
