@@ -2,5 +2,5 @@
 // This is a comment
 
 int main(void) {
-    return 1 + 1;
+    return 2- -1;
 }

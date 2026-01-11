@@ -1,16 +1,55 @@
-Program(
-    Function(
-        "main",
-        Return(
-            BinaryExpr(
-                BitwiseOr,
-                IntLiteral(
-                    1,
-                ),
-                IntLiteral(
-                    1,
-                ),
+ASTNode {
+    node: Program(
+        ASTNode {
+            node: Function(
+                "main",
+                [
+                    ASTNode {
+                        node: Statement(
+                            ASTNode {
+                                node: Return(
+                                    ASTNode {
+                                        node: BinaryExpr(
+                                            Minus,
+                                            ASTNode {
+                                                node: IntLiteral(
+                                                    2,
+                                                ),
+                                                row: 4,
+                                                column: 11,
+                                            },
+                                            ASTNode {
+                                                node: UnaryExpr(
+                                                    Minus,
+                                                    ASTNode {
+                                                        node: IntLiteral(
+                                                            1,
+                                                        ),
+                                                        row: 4,
+                                                        column: 15,
+                                                    },
+                                                ),
+                                                row: 4,
+                                                column: 14,
+                                            },
+                                        ),
+                                        row: 4,
+                                        column: 12,
+                                    },
+                                ),
+                                row: 4,
+                                column: 4,
+                            },
+                        ),
+                        row: 4,
+                        column: 4,
+                    },
+                ],
             ),
-        ),
+            row: 3,
+            column: 4,
+        },
     ),
-)
+    row: 3,
+    column: 0,
+}

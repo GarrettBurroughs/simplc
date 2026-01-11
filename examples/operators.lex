@@ -6,8 +6,9 @@ TypeVoid@3:9
 CloseParen@3:13
 OpenBrace@3:15
 Return@4:4
-IntLiteral(1)@4:11
-BitwiseOr@4:13
+IntLiteral(2)@4:11
+Minus@4:12
+Minus@4:14
 IntLiteral(1)@4:15
 Semicolon@4:16
 CloseBrace@5:0

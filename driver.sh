@@ -22,6 +22,9 @@ gcc -E -P "$SOURCE_FILE" -o "${BASE_NAME}.i"
 # 4. Run your compiler (The core of Chapter 1)
 # This converts the preprocessed file (.i) into assembly (.s)
 /home/gburroughs/dev/rust/compiler/target/debug/compiler "${BASE_NAME}.i"
+if [ $? != 0 ]; then 
+    exit 1
+fi
 
 # 5. Assemble and Link
 # This converts the assembly file into a final executable
@@ -30,7 +33,7 @@ gcc "$ASSEMBLY_FILE" -o "$EXECUTABLE_NAME"
 # 6. Cleanup (Optional)
 # rm "${BASE_NAME}.i" "$ASSEMBLY_FILE"
 
-./$EXECUTABLE_NAME
+$EXECUTABLE_NAME
 
 echo $?
 echo "Build successful: $EXECUTABLE_NAME"

@@ -2,14 +2,14 @@ use std::{
     fs::{self, File}, io::Write, path::{PathBuf}, process::exit
 };
 
-use clap::Parser;
 use inkwell::context::Context;
 use thiserror::Error;
 
-use crate::frontend::{ast::AST, lexer::Lexer};
+use crate::{frontend::{lexer::Lexer, parser::Parser}, semantic::variable_resolution::{VariableResolution, VerifyResolution}};
 
 mod frontend;
 mod codegen;
+mod semantic;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum CompilerError {
@@ -18,9 +18,12 @@ pub enum CompilerError {
 
     #[error("Parse Error at {0} {1} {2}")]
     ParseError(usize, usize, String),
+
+    #[error("Semantic Error at {0} {1} {2}")]
+    SemanticError(usize, usize, String),
 }
 
-#[derive(Parser, Debug)]
+#[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     /// File to compile
@@ -52,7 +55,7 @@ struct Args {
 }
 
 fn main() {
-    let args = Args::parse();
+    let args = <Args as clap::Parser>::parse();
     if let Err(e) = run(args) {
         eprintln!("{}", e);
         exit(1);
@@ -74,6 +77,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let contents = fs::read_to_string(&args.file)
         .map_err(|_| format!("Could not read file: {}", args.file))?;
 
+    // Lexical Analysis
     let lexer = Lexer::new(&contents);
     let tokens: Vec<_> = lexer.collect::<Result<Vec<_>, _>>()?;
 
@@ -88,8 +92,16 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let mut ast = AST::new(tokens);
-    let program = ast.parse_program()?;
+    // Parsing
+    let mut parser = Parser::new(tokens);
+    let mut program = parser.parse_program()?;
+
+    // Semantic Pass
+    let mut variable_resolution = VariableResolution::new();
+    if let Some(err) = program.verify_resolution(&mut variable_resolution) {
+        return Err(Box::new(err));
+    }
+
     if args.ast {
         if args.print {
             println!("{:#?}", program);
@@ -100,8 +112,10 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         writeln!(file, "{:#?}", program)?;
     }
 
+
+    // Code Generation
     let context = Context::create();
-    let generator = codegen::codegen::CodeGen::new(&context, "main");
+    let mut generator = codegen::codegen::CodeGen::new(&context, "main");
     generator.run_codegen(&program);
 
     if args.ir {

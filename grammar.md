@@ -1,14 +1,18 @@
 # SimplC Grammar
 
 ```
-<program>    ::= <function>
-<function>   ::= "int" <identifier> "(" "void" ")" "{" <statement> "}"
-<statement>  ::= "return" <exp> ";"
-<expr>       ::= <factor> | <expr> <binop> <expr>
-<factor>     ::= <int> | <unop> <factor> | "(" <expr> ")" 
-<unop>       ::= "-" | "~"
-<identifier> ::= ? An identifier token ?
-<int>        ::= ? A constant token ?
-<binop>      ::= "+" | "-" | "*" | "/" | "%"
+<program>     ::= <function>
+<function>    ::= "int" <identifier> "(" "void" ")" "{" { <block> } "}"
+<block>       ::= <statement> | <declaration>
+<statement>   ::= "return" <exp> ";" | <expr> ";" | ";"
+<declaration> ::= "int" <identifier> [ "=" <expr> ] ";"
+<expr>        ::= <factor> | <expr> <binop> <expr> 
+<factor>      ::= <int> | <identifier> | <unop> <factor> | "(" <expr> ")" 
+<unop>        ::= "-" | "~" | "!" | <increment>
+<increment>   ::= "++" | "--"
+<identifier>  ::= ? An identifier token ?
+<int>         ::= ? A constant token ?
+<binop>       ::= "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "&&" | "||" | "==" | "!=" |
+                 "<" | "<=" | ">" | ">=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>"
 ```
 
