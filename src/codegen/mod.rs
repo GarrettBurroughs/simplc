@@ -1,1 +1,7 @@
 pub mod codegen;
+pub mod codegen_program;
+pub mod codegen_function;
+pub mod codegen_block;
+pub mod codegen_declaration;
+pub mod codegen_statement;
+pub mod codegen_expression;
