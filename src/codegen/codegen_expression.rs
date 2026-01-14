@@ -12,7 +12,6 @@ use crate::{
     },
 };
 
-
 impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
     fn codegen(
         &self,
@@ -49,8 +48,12 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
                     return Ok(Some(build_short_circuit(codegen, op, left, right)?));
                 }
 
-                let lhs = left.codegen(codegen)?.expect("lhs of binary expr to have a value");
-                let rhs = right.codegen(codegen)?.expect("rhs of binary expr to have a value");
+                let lhs = left
+                    .codegen(codegen)?
+                    .expect("lhs of binary expr to have a value");
+                let rhs = right
+                    .codegen(codegen)?
+                    .expect("rhs of binary expr to have a value");
                 let output = if let BasicValueEnum::IntValue(l) = lhs
                     && let BasicValueEnum::IntValue(r) = rhs
                 {
@@ -67,23 +70,70 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
             Expression::Variable(name) => {
                 let pointer = codegen.variable_map.get(name).unwrap().clone();
                 if codegen.gen_l_value {
-                    return Ok(Some(pointer.as_basic_value_enum()))
+                    return Ok(Some(pointer.as_basic_value_enum()));
                 }
-                Ok(Some(codegen
-                    .builder
-                    .build_load(codegen.context.i64_type(), pointer, name)?.as_basic_value_enum()))
+                Ok(Some(
+                    codegen
+                        .builder
+                        .build_load(codegen.context.i64_type(), pointer, name)?
+                        .as_basic_value_enum(),
+                ))
             }
             Expression::Assignment(lhs, rhs) => {
-                let val = rhs.codegen(codegen)?.expect("rhs of assignment to have a value");
+                let val = rhs
+                    .codegen(codegen)?
+                    .expect("rhs of assignment to have a value");
 
                 codegen.gen_l_value = true;
-                let lhs_ptr = lhs.codegen(codegen)?.expect("lhs to have a value").into_pointer_value();
+                let lhs_ptr = lhs
+                    .codegen(codegen)?
+                    .expect("lhs to have a value")
+                    .into_pointer_value();
                 codegen.gen_l_value = false;
 
-                codegen
-                    .builder
-                    .build_store(lhs_ptr, val)?;
+                codegen.builder.build_store(lhs_ptr, val)?;
                 Ok(Some(val.as_basic_value_enum()))
+            }
+            Expression::Ternary(condition, expr1, expr2) => {
+                let cond = condition
+                    .codegen(codegen)?
+                    .expect("expected condition to have a value")
+                    .into_int_value();
+
+                let cmp = codegen.builder.build_int_compare(
+                    IntPredicate::NE,
+                    cond,
+                    cond.get_type().const_zero(),
+                    "ternary_cmp",
+                )?;
+
+                let current_fn = codegen
+                    .builder
+                    .get_insert_block()
+                    .unwrap()
+                    .get_parent()
+                    .unwrap();
+
+                let then_block = codegen.context.append_basic_block(current_fn, "then_block");
+                let else_block = codegen.context.append_basic_block(current_fn, "else_block");
+                let merge_block = codegen.context.append_basic_block(current_fn, "merge_block");
+
+                codegen.builder.build_conditional_branch(cmp, then_block, else_block)?;
+
+                codegen.builder.position_at_end(then_block);
+                let val1 = expr1.codegen(codegen)?.expect("expected lhs of ternary to have a value").into_int_value();
+                let then_end_block = codegen.builder.get_insert_block().unwrap();
+                codegen.builder.build_unconditional_branch(merge_block)?;
+
+                codegen.builder.position_at_end(else_block);
+                let val2 = expr2.codegen(codegen)?.expect("expected rhs of ternary to have a value").into_int_value();
+                let else_end_block = codegen.builder.get_insert_block().unwrap();
+                codegen.builder.build_unconditional_branch(merge_block)?;
+
+                codegen.builder.position_at_end(merge_block);
+                let phi = codegen.builder.build_phi(val1.get_type(), "ternary_phi")?;
+                phi.add_incoming(&[(&val1, then_end_block), (&val2, else_end_block)]);
+                Ok(Some(phi.as_basic_value().as_basic_value_enum()))
             }
         }
     }
@@ -146,7 +196,8 @@ fn build_short_circuit<'ctx>(
 ) -> Result<BasicValueEnum<'ctx>, BuilderError> {
     let lhs = left
         .codegen(codegen)?
-        .expect("short circuit lhs to have a value").into_int_value();
+        .expect("short circuit lhs to have a value")
+        .into_int_value();
 
     let lhs_cmp = codegen.builder.build_int_compare(
         IntPredicate::NE,
@@ -186,7 +237,8 @@ fn build_short_circuit<'ctx>(
 
     let rhs = right
         .codegen(codegen)?
-        .expect("short circuit rhs to have a value").into_int_value();
+        .expect("short circuit rhs to have a value")
+        .into_int_value();
 
     let result = codegen.builder.build_int_compare(
         IntPredicate::NE,
@@ -234,23 +286,16 @@ fn build_int_int_binary_expr<'ctx>(
         Token::BitwiseOr => codegen.builder.build_or(l, r, "or"),
         Token::BitwiseXOR => codegen.builder.build_xor(l, r, "xor"),
         Token::LeftShift => codegen.builder.build_left_shift(l, r, "shift_left"),
-        Token::RightShift => {
-            codegen.builder.build_right_shift(l, r, true, "shift_right")
-        }
+        Token::RightShift => codegen.builder.build_right_shift(l, r, true, "shift_right"),
         Token::LogicalEq => codegen.i_cmp_ze(IntPredicate::EQ, l, r, "equals"),
         Token::NotEqual => codegen.i_cmp_ze(IntPredicate::NE, l, r, "not_equals"),
-        Token::GreaterThan => {
-            codegen.i_cmp_ze(IntPredicate::SGT, l, r, "greater_than")
-        }
+        Token::GreaterThan => codegen.i_cmp_ze(IntPredicate::SGT, l, r, "greater_than"),
         Token::LessThan => codegen.i_cmp_ze(IntPredicate::SLT, l, r, "less_than"),
-        Token::GreaterThanEq => {
-            codegen.i_cmp_ze(IntPredicate::SGE, l, r, "greater_than_eq")
-        }
-        Token::LessThanEq => {
-            codegen.i_cmp_ze(IntPredicate::SLE, l, r, "less_than_eq")
-        }
+        Token::GreaterThanEq => codegen.i_cmp_ze(IntPredicate::SGE, l, r, "greater_than_eq"),
+        Token::LessThanEq => codegen.i_cmp_ze(IntPredicate::SLE, l, r, "less_than_eq"),
         _ => panic!("Invalid binary expression operator {}", operator),
-    }?.as_basic_value_enum();
+    }?
+    .as_basic_value_enum();
 
     Ok(result)
 }

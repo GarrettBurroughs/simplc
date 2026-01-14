@@ -98,6 +98,7 @@ impl Token {
             | Token::GreaterThanEq
             | Token::LessThanEq
             | Token::Equal
+            | Token::QuestionMark
             => true,
             _ => false,
         }

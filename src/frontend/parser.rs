@@ -30,6 +30,7 @@ impl Parser {
         }
         match tok {
             Token::Equal => 2,
+            Token::QuestionMark => 3,
             Token::LogicalOr => 4,
             Token::LogicalAnd => 5,
             Token::BitwiseOr => 6,
@@ -303,6 +304,15 @@ impl Parser {
                     Expression::Assignment(Box::new(left), Box::new(addition)),
                     loc,
                 )
+            } else if operator == Token::QuestionMark {
+                let middle = self.parse_expr(0)?;
+                self.expect(Token::Colon)?;
+                let right = self.parse_expr(next_precedence)?;
+                ASTNode::new(Expression::Ternary(
+                        Box::new(left), 
+                        Box::new(middle),
+                        Box::new(right)
+                ), loc)
             } else {
                 let right = self.parse_expr(next_precedence + 1)?;
                 ASTNode::new(

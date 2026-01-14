@@ -1,161 +1,109 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
-use crate::{CompilerError, frontend::{ast::*, tokens::Token}};
+use crate::{
+    CompilerError,
+    frontend::{
+        ast::*,
+        tokens::Token,
+        visitor::{AstVisitable, Visitor, walk_declaration, walk_expression},
+    },
+};
 
-pub struct VariableResolution {
+pub struct VariableResolver {
     variable_map: HashMap<String, String>,
     counter: i32,
+    error: Option<CompilerError>,
 }
 
-impl VariableResolution {
+impl VariableResolver {
     pub fn new() -> Self {
-        VariableResolution {
+        VariableResolver {
             variable_map: HashMap::new(),
             counter: 0,
+            error: None,
         }
     }
 
     fn get_unique_name(&mut self, name: &String) -> String {
-        let new_name = format!("{}{}", name, self.counter);
+        let new_name = format!("{}", name);
         self.counter += 1;
-        return new_name;
+        new_name
     }
 }
 
-pub trait VerifyResolution {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError>;
-}
-
-impl VerifyResolution for ASTNode<Program> {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError> {
-        match &mut self.node {
-            Program::Program(function) => function.verify_resolution(variable_resolution),
+impl Visitor for VariableResolver {
+    fn visit_declaration(&mut self, declaration: &mut ASTNode<Declaration>) {
+        if self.error.is_some() {
+            return;
         }
-    }
-}
 
-impl VerifyResolution for ASTNode<Function> {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError> {
-        match &mut self.node {
-            Function::Function(_, blocks) => blocks
-                .iter_mut()
-                .map(|b| b.verify_resolution(variable_resolution))
-                .reduce(|r1, r2| r1.or(r2))
-                .flatten(),
+        let Declaration::Declaration(name, _) = &mut declaration.node;
+        if self.variable_map.contains_key(name) {
+            self.error = Some(CompilerError::SemanticError(
+                declaration.row,
+                declaration.column,
+                format!("Variable {} already defined", name),
+            ));
+        } else {
+            let unique_name = self.get_unique_name(name);
+            self.variable_map.insert(name.clone(), unique_name.clone());
+            *name = unique_name;
         }
+        walk_declaration(self, declaration);
     }
-}
 
-impl VerifyResolution for ASTNode<Block> {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError> {
-        match &mut self.node {
-            Block::Declaration(declaration) => declaration.verify_resolution(variable_resolution),
-            Block::Statement(statement) => statement.verify_resolution(variable_resolution),
+    fn visit_expression(&mut self, expression: &mut ASTNode<Expression>) {
+        if self.error.is_some() {
+            return;
         }
-    }
-}
 
-impl VerifyResolution for ASTNode<Declaration> {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError> {
-        match &mut self.node {
-            Declaration::Declaration(name, expression) => {
-                if variable_resolution.variable_map.contains_key(name) {
-                    return Some(CompilerError::SemanticError(
-                        self.row,
-                        self.column,
-                        format!("Variable {} already defined", name),
-                    ));
+        match &mut expression.node {
+            Expression::Variable(name) => {
+                if let Some(v) = self.variable_map.get(name) {
+                    *name = v.clone();
                 } else {
-                    let unique_name = variable_resolution.get_unique_name(name);
-                    variable_resolution
-                        .variable_map
-                        .insert(name.to_string(), unique_name.to_string());
-                    if let Some(expr) = expression {
-                        expr.verify_resolution(variable_resolution);
-                    }
-                    *name = unique_name;
-                    return None;
+                    self.error = Some(CompilerError::SemanticError(
+                        expression.row,
+                        expression.column,
+                        format!("Undefined variable {} ", name),
+                    ));
                 }
             }
-        }
-    }
-}
-
-impl VerifyResolution for ASTNode<Statement> {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError> {
-        match &mut self.node {
-            Statement::Return(expression) => expression.verify_resolution(variable_resolution),
-            Statement::Expression(expression) => expression.verify_resolution(variable_resolution),
-            Statement::Null => None,
-            Statement::If(astnode, astnode1, astnode2) => {
-                None
-            }
-        }
-    }
-}
-
-impl VerifyResolution for ASTNode<Expression> {
-    fn verify_resolution(
-        &mut self,
-        variable_resolution: &mut VariableResolution,
-    ) -> Option<CompilerError> {
-        match &mut self.node {
-            Expression::IntLiteral(_) => None,
-            Expression::Variable(name) => {
-                if let Some(v) = variable_resolution.variable_map.get(name) {
-                    *name = v.to_string();
-                    None
-                } else {
-                    Some(CompilerError::SemanticError(
-                        self.row,
-                        self.column,
-                        format!("Undefined variable {} ", name),
-                    ))
+            Expression::Assignment(left, _) => {
+                if !matches!(left.node, Expression::Variable(_)) {
+                    self.error = Some(CompilerError::SemanticError(
+                        expression.row,
+                        expression.column,
+                        "Invalid left hand side of assignment operator".to_string(),
+                    ));
                 }
             }
             Expression::UnaryExpr(tok, expression) => {
                 if *tok == Token::Increment || *tok == Token::Decrement {
-                    if let Expression::Variable(_) = &expression.node {} else {
-                        return Some(CompilerError::SemanticError(self.row, self.column, "".into()));
+                    if !expression.node.is_assignable() {
+                        self.error = Some(CompilerError::SemanticError(
+                            expression.row,
+                            expression.column,
+                            format!("Cannot {} {:?}", tok, expression),
+                        ))
                     }
                 }
-                expression.verify_resolution(variable_resolution)
             }
-            Expression::BinaryExpr(_, left, right) => {
-                let l_valid = left.verify_resolution(variable_resolution);
-                let r_valid = right.verify_resolution(variable_resolution);
-                l_valid.or(r_valid)
-            }
-            Expression::Assignment(left, right) => {
-                if let Expression::Variable(_) = (**left).node {
-                    let l_valid = left.verify_resolution(variable_resolution);
-                    let r_valid = right.verify_resolution(variable_resolution);
-                    return l_valid.or(r_valid);
-                }
-                Some(CompilerError::SemanticError(
-                    self.row,
-                    self.column,
-                    format!("Invalid left hand side of assignment operator {:?}", left),
-                ))
-            }
+            _ => {}
         }
+
+        walk_expression(self, expression);
+    }
+}
+
+pub fn resolve_variables(
+    program: &mut ASTNode<Program>,
+) -> Result<HashMap<String, String>, CompilerError> {
+    let mut resolver = VariableResolver::new();
+    program.accept(&mut resolver);
+    if let Some(error) = resolver.error {
+        Err(error)
+    } else {
+        Ok(resolver.variable_map)
     }
 }

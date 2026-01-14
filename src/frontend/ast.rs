@@ -15,6 +15,7 @@ pub enum Expression {
     UnaryExpr(Token, Box<ASTNode<Expression>>),
     BinaryExpr(Token, Box<ASTNode<Expression>>, Box<ASTNode<Expression>>),
     Assignment(Box<ASTNode<Expression>>, Box<ASTNode<Expression>>),
+    Ternary(Box<ASTNode<Expression>>, Box<ASTNode<Expression>>, Box<ASTNode<Expression>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -52,5 +53,15 @@ impl<T> ASTNode<T> {
             row: loc.0,
             column: loc.1,
         }
+    }
+}
+
+impl Expression {
+    pub fn is_assignable(&self) -> bool {
+        match &self {
+            Expression::Variable(_) => true,
+            _ => false,
+        }
+
     }
 }

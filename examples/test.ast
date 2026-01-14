@@ -8,11 +8,11 @@ ASTNode {
                         node: Declaration(
                             ASTNode {
                                 node: Declaration(
-                                    "x0",
+                                    "a",
                                     Some(
                                         ASTNode {
                                             node: IntLiteral(
-                                                3,
+                                                1,
                                             ),
                                             row: 1,
                                             column: 12,
@@ -27,106 +27,123 @@ ASTNode {
                         column: 4,
                     },
                     ASTNode {
-                        node: Statement(
+                        node: Declaration(
                             ASTNode {
-                                node: If(
-                                    ASTNode {
-                                        node: BinaryExpr(
-                                            LogicalEq,
-                                            ASTNode {
-                                                node: Variable(
-                                                    "x",
-                                                ),
-                                                row: 2,
-                                                column: 8,
-                                            },
-                                            ASTNode {
-                                                node: IntLiteral(
-                                                    5,
-                                                ),
-                                                row: 2,
-                                                column: 13,
-                                            },
-                                        ),
-                                        row: 2,
-                                        column: 10,
-                                    },
-                                    ASTNode {
-                                        node: Return(
-                                            ASTNode {
-                                                node: IntLiteral(
-                                                    0,
-                                                ),
-                                                row: 3,
-                                                column: 15,
-                                            },
-                                        ),
-                                        row: 3,
-                                        column: 8,
-                                    },
+                                node: Declaration(
+                                    "b",
                                     Some(
                                         ASTNode {
-                                            node: If(
+                                            node: IntLiteral(
+                                                2,
+                                            ),
+                                            row: 2,
+                                            column: 12,
+                                        },
+                                    ),
+                                ),
+                                row: 2,
+                                column: 10,
+                            },
+                        ),
+                        row: 2,
+                        column: 4,
+                    },
+                    ASTNode {
+                        node: Declaration(
+                            ASTNode {
+                                node: Declaration(
+                                    "flag",
+                                    Some(
+                                        ASTNode {
+                                            node: IntLiteral(
+                                                0,
+                                            ),
+                                            row: 3,
+                                            column: 15,
+                                        },
+                                    ),
+                                ),
+                                row: 3,
+                                column: 13,
+                            },
+                        ),
+                        row: 3,
+                        column: 4,
+                    },
+                    ASTNode {
+                        node: Declaration(
+                            ASTNode {
+                                node: Declaration(
+                                    "c",
+                                    Some(
+                                        ASTNode {
+                                            node: Ternary(
                                                 ASTNode {
                                                     node: BinaryExpr(
-                                                        LogicalEq,
+                                                        GreaterThan,
                                                         ASTNode {
                                                             node: Variable(
-                                                                "x",
+                                                                "a",
                                                             ),
-                                                            row: 4,
-                                                            column: 13,
+                                                            row: 5,
+                                                            column: 12,
+                                                        },
+                                                        ASTNode {
+                                                            node: Variable(
+                                                                "b",
+                                                            ),
+                                                            row: 5,
+                                                            column: 16,
+                                                        },
+                                                    ),
+                                                    row: 5,
+                                                    column: 14,
+                                                },
+                                                ASTNode {
+                                                    node: IntLiteral(
+                                                        5,
+                                                    ),
+                                                    row: 5,
+                                                    column: 20,
+                                                },
+                                                ASTNode {
+                                                    node: Ternary(
+                                                        ASTNode {
+                                                            node: Variable(
+                                                                "flag",
+                                                            ),
+                                                            row: 5,
+                                                            column: 24,
                                                         },
                                                         ASTNode {
                                                             node: IntLiteral(
                                                                 6,
                                                             ),
-                                                            row: 4,
-                                                            column: 18,
+                                                            row: 5,
+                                                            column: 31,
                                                         },
-                                                    ),
-                                                    row: 4,
-                                                    column: 15,
-                                                },
-                                                ASTNode {
-                                                    node: Return(
                                                         ASTNode {
                                                             node: IntLiteral(
-                                                                1,
+                                                                7,
                                                             ),
                                                             row: 5,
-                                                            column: 15,
+                                                            column: 35,
                                                         },
                                                     ),
                                                     row: 5,
-                                                    column: 8,
+                                                    column: 29,
                                                 },
-                                                Some(
-                                                    ASTNode {
-                                                        node: Return(
-                                                            ASTNode {
-                                                                node: IntLiteral(
-                                                                    0,
-                                                                ),
-                                                                row: 7,
-                                                                column: 15,
-                                                            },
-                                                        ),
-                                                        row: 7,
-                                                        column: 8,
-                                                    },
-                                                ),
                                             ),
-                                            row: 4,
-                                            column: 9,
+                                            row: 5,
+                                            column: 18,
                                         },
                                     ),
                                 ),
-                                row: 2,
-                                column: 4,
+                                row: 5,
+                                column: 10,
                             },
                         ),
-                        row: 2,
+                        row: 5,
                         column: 4,
                     },
                     ASTNode {
@@ -135,17 +152,17 @@ ASTNode {
                                 node: Return(
                                     ASTNode {
                                         node: Variable(
-                                            "x0",
+                                            "c",
                                         ),
-                                        row: 8,
+                                        row: 6,
                                         column: 11,
                                     },
                                 ),
-                                row: 8,
+                                row: 6,
                                 column: 4,
                             },
                         ),
-                        row: 8,
+                        row: 6,
                         column: 4,
                     },
                 ],

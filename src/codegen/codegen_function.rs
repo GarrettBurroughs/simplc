@@ -15,7 +15,8 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Function> {
                 for block in blocks {
                     block.codegen(codegen)?;
                 }
-                if let None = basic_block.get_terminator() {
+                let current_block = codegen.builder.get_insert_block().unwrap();
+                if let None = current_block.get_terminator() {
                     codegen
                         .builder
                         .build_return(Some(&codegen.context.i64_type().const_zero()))?;

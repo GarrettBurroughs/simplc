@@ -1,5 +1,4 @@
 int main(void) {
-    int x = 0;
-    int b = x++;
-    return 1--;
+    if (1 + 2 == 3)
+        return 5;
 }

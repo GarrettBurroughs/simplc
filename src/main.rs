@@ -5,7 +5,7 @@ use std::{
 use inkwell::context::Context;
 use thiserror::Error;
 
-use crate::{frontend::{lexer::Lexer, parser::Parser}, semantic::variable_resolution::{VariableResolution, VerifyResolution}};
+use crate::{frontend::{lexer::Lexer, parser::Parser}, semantic::variable_resolution::{resolve_variables}};
 
 mod frontend;
 mod codegen;
@@ -97,10 +97,10 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut program = parser.parse_program()?;
 
     // Semantic Pass
-    let mut variable_resolution = VariableResolution::new();
-    if let Some(err) = program.verify_resolution(&mut variable_resolution) {
-        return Err(Box::new(err));
-    }
+    let _variable_map = match resolve_variables(&mut program) {
+        Ok(variable_map) => variable_map,
+        Err(e) => return Err(Box::new(e)),
+    };
 
     if args.ast {
         if args.print {
