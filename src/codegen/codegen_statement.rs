@@ -12,7 +12,8 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Statement> {
                 Ok(None)
             }
             Statement::Expression(expr) => expr.codegen(codegen),
-            Statement::Null => Ok(None)
+            Statement::Null => Ok(None),
+            Statement::If(condition, then, elseStmnt) => panic!("Not yet implemented"),
         }
     }
 }

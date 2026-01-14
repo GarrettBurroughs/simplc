@@ -66,6 +66,8 @@ impl<'a> Lexer<'a> {
                 "int" => Token::TypeInt,
                 "void" => Token::TypeVoid,
                 "return" => Token::Return,
+                "if" => Token::If,
+                "else" => Token::Else,
                 _ => Token::Identifier(ident),
             };
 
@@ -200,6 +202,8 @@ impl<'a> Lexer<'a> {
             '}' => Token::CloseBrace,
             ';' => Token::Semicolon,
             '~' => Token::BitwiseCompliment,
+            '?' => Token::QuestionMark, 
+            ':' => Token::Colon,
             _ => return Err(CompilerError::LexError(self.row, self.column)),
         };
         return Ok(tok);

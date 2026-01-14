@@ -8,11 +8,11 @@ ASTNode {
                         node: Declaration(
                             ASTNode {
                                 node: Declaration(
-                                    "a0",
+                                    "x0",
                                     Some(
                                         ASTNode {
                                             node: IntLiteral(
-                                                10,
+                                                3,
                                             ),
                                             row: 1,
                                             column: 12,
@@ -27,22 +27,103 @@ ASTNode {
                         column: 4,
                     },
                     ASTNode {
-                        node: Declaration(
+                        node: Statement(
                             ASTNode {
-                                node: Declaration(
-                                    "b1",
+                                node: If(
+                                    ASTNode {
+                                        node: BinaryExpr(
+                                            LogicalEq,
+                                            ASTNode {
+                                                node: Variable(
+                                                    "x",
+                                                ),
+                                                row: 2,
+                                                column: 8,
+                                            },
+                                            ASTNode {
+                                                node: IntLiteral(
+                                                    5,
+                                                ),
+                                                row: 2,
+                                                column: 13,
+                                            },
+                                        ),
+                                        row: 2,
+                                        column: 10,
+                                    },
+                                    ASTNode {
+                                        node: Return(
+                                            ASTNode {
+                                                node: IntLiteral(
+                                                    0,
+                                                ),
+                                                row: 3,
+                                                column: 15,
+                                            },
+                                        ),
+                                        row: 3,
+                                        column: 8,
+                                    },
                                     Some(
                                         ASTNode {
-                                            node: IntLiteral(
-                                                12,
+                                            node: If(
+                                                ASTNode {
+                                                    node: BinaryExpr(
+                                                        LogicalEq,
+                                                        ASTNode {
+                                                            node: Variable(
+                                                                "x",
+                                                            ),
+                                                            row: 4,
+                                                            column: 13,
+                                                        },
+                                                        ASTNode {
+                                                            node: IntLiteral(
+                                                                6,
+                                                            ),
+                                                            row: 4,
+                                                            column: 18,
+                                                        },
+                                                    ),
+                                                    row: 4,
+                                                    column: 15,
+                                                },
+                                                ASTNode {
+                                                    node: Return(
+                                                        ASTNode {
+                                                            node: IntLiteral(
+                                                                1,
+                                                            ),
+                                                            row: 5,
+                                                            column: 15,
+                                                        },
+                                                    ),
+                                                    row: 5,
+                                                    column: 8,
+                                                },
+                                                Some(
+                                                    ASTNode {
+                                                        node: Return(
+                                                            ASTNode {
+                                                                node: IntLiteral(
+                                                                    0,
+                                                                ),
+                                                                row: 7,
+                                                                column: 15,
+                                                            },
+                                                        ),
+                                                        row: 7,
+                                                        column: 8,
+                                                    },
+                                                ),
                                             ),
-                                            row: 2,
-                                            column: 12,
+                                            row: 4,
+                                            column: 9,
                                         },
                                     ),
                                 ),
                                 row: 2,
-                                column: 10,
+                                column: 4,
                             },
                         ),
                         row: 2,
@@ -51,402 +132,20 @@ ASTNode {
                     ASTNode {
                         node: Statement(
                             ASTNode {
-                                node: Expression(
-                                    ASTNode {
-                                        node: Assignment(
-                                            ASTNode {
-                                                node: Variable(
-                                                    "a0",
-                                                ),
-                                                row: 3,
-                                                column: 4,
-                                            },
-                                            ASTNode {
-                                                node: BinaryExpr(
-                                                    Plus,
-                                                    ASTNode {
-                                                        node: Variable(
-                                                            "a0",
-                                                        ),
-                                                        row: 3,
-                                                        column: 4,
-                                                    },
-                                                    ASTNode {
-                                                        node: BinaryExpr(
-                                                            LogicalOr,
-                                                            ASTNode {
-                                                                node: IntLiteral(
-                                                                    0,
-                                                                ),
-                                                                row: 3,
-                                                                column: 9,
-                                                            },
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "b1",
-                                                                ),
-                                                                row: 3,
-                                                                column: 14,
-                                                            },
-                                                        ),
-                                                        row: 3,
-                                                        column: 11,
-                                                    },
-                                                ),
-                                                row: 3,
-                                                column: 6,
-                                            },
-                                        ),
-                                        row: 3,
-                                        column: 6,
-                                    },
-                                ),
-                                row: 3,
-                                column: 4,
-                            },
-                        ),
-                        row: 3,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Statement(
-                            ASTNode {
-                                node: Expression(
-                                    ASTNode {
-                                        node: Assignment(
-                                            ASTNode {
-                                                node: Variable(
-                                                    "b1",
-                                                ),
-                                                row: 4,
-                                                column: 4,
-                                            },
-                                            ASTNode {
-                                                node: BinaryExpr(
-                                                    Mul,
-                                                    ASTNode {
-                                                        node: Variable(
-                                                            "b1",
-                                                        ),
-                                                        row: 4,
-                                                        column: 4,
-                                                    },
-                                                    ASTNode {
-                                                        node: BinaryExpr(
-                                                            LogicalAnd,
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "a0",
-                                                                ),
-                                                                row: 4,
-                                                                column: 9,
-                                                            },
-                                                            ASTNode {
-                                                                node: IntLiteral(
-                                                                    0,
-                                                                ),
-                                                                row: 4,
-                                                                column: 14,
-                                                            },
-                                                        ),
-                                                        row: 4,
-                                                        column: 11,
-                                                    },
-                                                ),
-                                                row: 4,
-                                                column: 6,
-                                            },
-                                        ),
-                                        row: 4,
-                                        column: 6,
-                                    },
-                                ),
-                                row: 4,
-                                column: 4,
-                            },
-                        ),
-                        row: 4,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Declaration(
-                            ASTNode {
-                                node: Declaration(
-                                    "c2",
-                                    Some(
-                                        ASTNode {
-                                            node: IntLiteral(
-                                                14,
-                                            ),
-                                            row: 6,
-                                            column: 12,
-                                        },
-                                    ),
-                                ),
-                                row: 6,
-                                column: 10,
-                            },
-                        ),
-                        row: 6,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Statement(
-                            ASTNode {
-                                node: Expression(
-                                    ASTNode {
-                                        node: Assignment(
-                                            ASTNode {
-                                                node: Variable(
-                                                    "c2",
-                                                ),
-                                                row: 7,
-                                                column: 4,
-                                            },
-                                            ASTNode {
-                                                node: BinaryExpr(
-                                                    Minus,
-                                                    ASTNode {
-                                                        node: Variable(
-                                                            "c2",
-                                                        ),
-                                                        row: 7,
-                                                        column: 4,
-                                                    },
-                                                    ASTNode {
-                                                        node: BinaryExpr(
-                                                            LogicalOr,
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "a0",
-                                                                ),
-                                                                row: 7,
-                                                                column: 9,
-                                                            },
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "b1",
-                                                                ),
-                                                                row: 7,
-                                                                column: 14,
-                                                            },
-                                                        ),
-                                                        row: 7,
-                                                        column: 11,
-                                                    },
-                                                ),
-                                                row: 7,
-                                                column: 6,
-                                            },
-                                        ),
-                                        row: 7,
-                                        column: 6,
-                                    },
-                                ),
-                                row: 7,
-                                column: 4,
-                            },
-                        ),
-                        row: 7,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Declaration(
-                            ASTNode {
-                                node: Declaration(
-                                    "d3",
-                                    Some(
-                                        ASTNode {
-                                            node: IntLiteral(
-                                                16,
-                                            ),
-                                            row: 9,
-                                            column: 12,
-                                        },
-                                    ),
-                                ),
-                                row: 9,
-                                column: 10,
-                            },
-                        ),
-                        row: 9,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Statement(
-                            ASTNode {
-                                node: Expression(
-                                    ASTNode {
-                                        node: Assignment(
-                                            ASTNode {
-                                                node: Variable(
-                                                    "d3",
-                                                ),
-                                                row: 10,
-                                                column: 4,
-                                            },
-                                            ASTNode {
-                                                node: BinaryExpr(
-                                                    Div,
-                                                    ASTNode {
-                                                        node: Variable(
-                                                            "d3",
-                                                        ),
-                                                        row: 10,
-                                                        column: 4,
-                                                    },
-                                                    ASTNode {
-                                                        node: BinaryExpr(
-                                                            LogicalOr,
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "c2",
-                                                                ),
-                                                                row: 10,
-                                                                column: 9,
-                                                            },
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "d3",
-                                                                ),
-                                                                row: 10,
-                                                                column: 14,
-                                                            },
-                                                        ),
-                                                        row: 10,
-                                                        column: 11,
-                                                    },
-                                                ),
-                                                row: 10,
-                                                column: 6,
-                                            },
-                                        ),
-                                        row: 10,
-                                        column: 6,
-                                    },
-                                ),
-                                row: 10,
-                                column: 4,
-                            },
-                        ),
-                        row: 10,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Statement(
-                            ASTNode {
                                 node: Return(
                                     ASTNode {
-                                        node: BinaryExpr(
-                                            LogicalAnd,
-                                            ASTNode {
-                                                node: BinaryExpr(
-                                                    LogicalAnd,
-                                                    ASTNode {
-                                                        node: BinaryExpr(
-                                                            LogicalAnd,
-                                                            ASTNode {
-                                                                node: BinaryExpr(
-                                                                    LogicalEq,
-                                                                    ASTNode {
-                                                                        node: Variable(
-                                                                            "a0",
-                                                                        ),
-                                                                        row: 11,
-                                                                        column: 12,
-                                                                    },
-                                                                    ASTNode {
-                                                                        node: IntLiteral(
-                                                                            11,
-                                                                        ),
-                                                                        row: 11,
-                                                                        column: 17,
-                                                                    },
-                                                                ),
-                                                                row: 11,
-                                                                column: 14,
-                                                            },
-                                                            ASTNode {
-                                                                node: BinaryExpr(
-                                                                    LogicalEq,
-                                                                    ASTNode {
-                                                                        node: Variable(
-                                                                            "b1",
-                                                                        ),
-                                                                        row: 11,
-                                                                        column: 23,
-                                                                    },
-                                                                    ASTNode {
-                                                                        node: IntLiteral(
-                                                                            0,
-                                                                        ),
-                                                                        row: 11,
-                                                                        column: 28,
-                                                                    },
-                                                                ),
-                                                                row: 11,
-                                                                column: 25,
-                                                            },
-                                                        ),
-                                                        row: 11,
-                                                        column: 20,
-                                                    },
-                                                    ASTNode {
-                                                        node: BinaryExpr(
-                                                            LogicalEq,
-                                                            ASTNode {
-                                                                node: Variable(
-                                                                    "c2",
-                                                                ),
-                                                                row: 11,
-                                                                column: 33,
-                                                            },
-                                                            ASTNode {
-                                                                node: IntLiteral(
-                                                                    13,
-                                                                ),
-                                                                row: 11,
-                                                                column: 38,
-                                                            },
-                                                        ),
-                                                        row: 11,
-                                                        column: 35,
-                                                    },
-                                                ),
-                                                row: 11,
-                                                column: 30,
-                                            },
-                                            ASTNode {
-                                                node: BinaryExpr(
-                                                    LogicalEq,
-                                                    ASTNode {
-                                                        node: Variable(
-                                                            "d3",
-                                                        ),
-                                                        row: 11,
-                                                        column: 44,
-                                                    },
-                                                    ASTNode {
-                                                        node: IntLiteral(
-                                                            16,
-                                                        ),
-                                                        row: 11,
-                                                        column: 49,
-                                                    },
-                                                ),
-                                                row: 11,
-                                                column: 46,
-                                            },
+                                        node: Variable(
+                                            "x0",
                                         ),
-                                        row: 11,
-                                        column: 41,
+                                        row: 8,
+                                        column: 11,
                                     },
                                 ),
-                                row: 11,
+                                row: 8,
                                 column: 4,
                             },
                         ),
-                        row: 11,
+                        row: 8,
                         column: 4,
                     },
                 ],

@@ -4,6 +4,7 @@ use crate::frontend::tokens::Token;
 pub enum Statement {
     Return(ASTNode<Expression>),
     Expression(ASTNode<Expression>),
+    If(ASTNode<Expression>, Box<ASTNode<Statement>>, Option<Box<ASTNode<Statement>>>),
     Null,
 }
 

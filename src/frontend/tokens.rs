@@ -9,6 +9,8 @@ pub enum Token {
     TypeInt,  // int
     TypeVoid, // void
     Return,   // return
+    If,       // if
+    Else,     // else
 
     // Repeated tokens
     Increment,  // ++
@@ -55,6 +57,8 @@ pub enum Token {
     Percent,           // %
     BitwiseXOR,        // ^
     Not,               // !
+    QuestionMark,      // ?
+    Colon,             // :
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -171,6 +175,10 @@ impl fmt::Display for Token {
             Token::XorAssign => write!(f, "XorAssign"),
             Token::LeftShiftAssign => write!(f, "LeftShiftAssign"),
             Token::RightShiftAssign => write!(f, "RightShiftAssign"),
+            Token::If => write!(f, "If"),
+            Token::Else => write!(f, "Else"),
+            Token::QuestionMark => write!(f, "QuestionMark"),
+            Token::Colon => write!(f, "Colon"),
         }
     }
 }

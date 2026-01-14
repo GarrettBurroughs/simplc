@@ -141,6 +141,19 @@ impl Parser {
                 self.expect(Token::Semicolon)?;
                 Ok(ASTNode::new(Statement::Return(expr), loc))
             }
+            Token::If => {
+                self.get_token()?;
+                self.expect(Token::OpenParen)?;
+                let expr = self.parse_expr(0)?;
+                self.expect(Token::CloseParen)?;
+                let stmt = self.parse_statement()?;
+                if let Token::Else = self.peek()?.token {
+                    self.get_token()?;
+                    let else_stmt = self.parse_statement()?;
+                    return Ok(ASTNode::new(Statement::If(expr, Box::new(stmt), Some(Box::new(else_stmt))), loc));
+                }
+                Ok(ASTNode::new(Statement::If(expr, Box::new(stmt), None), loc))
+            }
             Token::Semicolon => {
                 self.get_token()?;
                 Ok(ASTNode::new(Statement::Null, loc))

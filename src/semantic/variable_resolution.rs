@@ -105,6 +105,9 @@ impl VerifyResolution for ASTNode<Statement> {
             Statement::Return(expression) => expression.verify_resolution(variable_resolution),
             Statement::Expression(expression) => expression.verify_resolution(variable_resolution),
             Statement::Null => None,
+            Statement::If(astnode, astnode1, astnode2) => {
+                None
+            }
         }
     }
 }
