@@ -18,9 +18,6 @@ pub enum CompilerError {
         location: Location,
         kind: SemanticErrorKind,
     },
-
-    #[error("Semantic Error")]
-    SystemError,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

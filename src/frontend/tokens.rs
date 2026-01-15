@@ -70,10 +70,10 @@ pub struct TokenLocation {
 }
 
 impl Token {
-    pub fn debug_string(&self) -> String {
-        let string = self.to_string();
-        return string.split('(').next().unwrap().to_string();
-    }
+    // pub fn debug_string(&self) -> String {
+    //     let string = self.to_string();
+    //     return string.split('(').next().unwrap().to_string();
+    // }
 
     pub fn is_binop(&self) -> bool {
         if self.is_compound_assignment() {

@@ -12,6 +12,11 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Function> {
                 let basic_block = codegen.context.append_basic_block(function, "entry");
                 codegen.builder.position_at_end(basic_block);
 
+                for v in &codegen.variables {
+                    let ptr = codegen.builder.build_alloca(codegen.context.i64_type(), v).unwrap();
+                    codegen.variable_map.insert(v.to_string(), ptr);
+                }
+
                 for block in blocks {
                     block.codegen(codegen)?;
                 }

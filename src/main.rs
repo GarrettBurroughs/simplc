@@ -86,7 +86,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut program = parser.parse_program()?;
 
     // Semantic Passes
-    resolve_variables(&mut program)?;
+    let variables = resolve_variables(&mut program)?;
     resolve_labels(&mut program)?;
 
     if args.ast {
@@ -102,7 +102,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
     // Code Generation
     let context = Context::create();
-    let mut generator = codegen::codegen::CodeGen::new(&context, "main");
+    let mut generator = codegen::codegen::CodeGen::new(&context, "main", variables);
     generator.run_codegen(&program);
 
     if args.ir {

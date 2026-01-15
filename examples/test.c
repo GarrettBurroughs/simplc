@@ -1,24 +1,8 @@
 int main(void) {
-    int a = 1;
-label_if:
-    if (a)
-        goto label_expression;
-    else
-        goto label_empty;
-
-label_goto:
-    goto label_return;
-
-    if (0)
-    label_expression:
-        a = 0;
-
-    goto label_if;
-
-label_return:
-    return a;
-
-label_empty:;
-    a = 100;
-    goto label_goto;
+    int x = 1;
+    goto post_declaration;
+    int i = (x = 0);
+post_declaration:
+    i = 5;
+    return (x == 1 && i == 5);
 }

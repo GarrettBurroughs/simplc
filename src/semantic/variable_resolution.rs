@@ -70,11 +70,11 @@ impl Visitor for VariableResolver {
     }
 }
 
-pub fn resolve_variables(program: &mut ASTNode<Program>) -> Result<(), CompilerError> {
+pub fn resolve_variables(program: &mut ASTNode<Program>) -> Result<HashSet<String>, CompilerError> {
     let mut resolver = VariableResolver::new();
     program.accept(&mut resolver);
     if let Some(error) = resolver.error {
         return Err(error);
     }
-    Ok(())
+    Ok(resolver.variable_set)
 }

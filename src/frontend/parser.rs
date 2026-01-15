@@ -63,6 +63,7 @@ impl Parser {
     }
 
     fn expect(&mut self, expected: Token) -> Result<TokenLocation, CompilerError> {
+        self.set_node_loc();
         let t = self.get_token()?;
 
         if std::mem::discriminant(&t.token) == std::mem::discriminant(&expected) {
@@ -197,6 +198,7 @@ impl Parser {
                 self.get_token()?;
                 let ident = self.get_token()?;
                 if let Token::Identifier(label) = ident.token {
+                    self.expect(Token::Semicolon)?;
                     loc.build(Statement::Goto(label))
                 } else {
                     return self.err(ParseErrorKind::InvalidLabel);
