@@ -1,10 +1,12 @@
-use crate::frontend::tokens::Token;
+use crate::{error::Location, frontend::tokens::Token};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
     Return(ASTNode<Expression>),
     Expression(ASTNode<Expression>),
     If(ASTNode<Expression>, Box<ASTNode<Statement>>, Option<Box<ASTNode<Statement>>>),
+    Label(String, Box<ASTNode<Statement>>),
+    Goto(String),
     Null,
 }
 
@@ -42,16 +44,14 @@ pub enum Declaration {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ASTNode<T> {
     pub node: T,
-    pub row: usize,
-    pub column: usize,
+    pub location: Location
 }
 
 impl<T> ASTNode<T> {
-    pub fn new(node: T, loc: (usize, usize)) -> Self {
+    pub fn new(node: T, location: Location) -> Self {
         ASTNode {
             node,
-            row: loc.0,
-            column: loc.1,
+            location
         }
     }
 }

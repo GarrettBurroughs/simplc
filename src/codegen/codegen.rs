@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use inkwell::{
-    IntPredicate, OptimizationLevel, builder::{Builder, BuilderError}, context::Context, memory_buffer::MemoryBuffer, module::Module, support::LLVMString, targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine}, values::{BasicValueEnum, IntValue, PointerValue}
+    IntPredicate, OptimizationLevel, basic_block::BasicBlock, builder::{Builder, BuilderError}, context::Context, memory_buffer::MemoryBuffer, module::Module, support::LLVMString, targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine}, values::{BasicValueEnum, IntValue, PointerValue}
 };
 
 pub struct CodeGen<'ctx> {
@@ -9,6 +9,7 @@ pub struct CodeGen<'ctx> {
     pub module: Module<'ctx>,
     pub builder: Builder<'ctx>,
     pub variable_map: HashMap<String, PointerValue<'ctx>>,
+    pub label_map: HashMap<String, BasicBlock<'ctx>>,
     pub gen_l_value: bool,
 }
 
@@ -19,6 +20,7 @@ impl<'ctx> CodeGen<'ctx> {
             module: context.create_module(program_name),
             builder: context.create_builder(),
             variable_map: HashMap::new(),
+            label_map: HashMap::new(),
             gen_l_value: false,
         }
     }
@@ -60,6 +62,21 @@ impl<'ctx> CodeGen<'ctx> {
         let ext = self.builder.build_int_z_extend(result, lhs.get_type(), format!("{}_ext", &name).as_str());
         return ext;
     }
+
+    pub fn get_basic_block(&mut self, name: &str) -> BasicBlock<'ctx> {
+        let function = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+        match self.label_map.get(name) {
+            Some(bb) => {
+                *bb
+            }
+            None => {
+                let bb = self.context.append_basic_block(function, name);
+                self.label_map.insert(name.to_string(), bb);
+                bb
+            }
+        }
+    }
+
 }
 
 pub trait CodeGenerator<'ctx> {

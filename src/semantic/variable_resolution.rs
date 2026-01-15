@@ -1,34 +1,27 @@
-use std::collections::HashMap;
+use std::collections::{HashSet};
 
 use crate::{
-    CompilerError,
+    error::{CompilerError, SemanticErrorKind::{self}},
     frontend::{
         ast::*,
         tokens::Token,
-        visitor::{AstVisitable, Visitor, walk_declaration, walk_expression},
+        visitor::{AstVisitable, Visitor, semantic_error, walk_declaration, walk_expression},
     },
 };
 
 pub struct VariableResolver {
-    variable_map: HashMap<String, String>,
-    counter: i32,
+    variable_set: HashSet<String>,
     error: Option<CompilerError>,
 }
 
 impl VariableResolver {
     pub fn new() -> Self {
         VariableResolver {
-            variable_map: HashMap::new(),
-            counter: 0,
+            variable_set: HashSet::new(),
             error: None,
         }
     }
 
-    fn get_unique_name(&mut self, name: &String) -> String {
-        let new_name = format!("{}", name);
-        self.counter += 1;
-        new_name
-    }
 }
 
 impl Visitor for VariableResolver {
@@ -37,18 +30,13 @@ impl Visitor for VariableResolver {
             return;
         }
 
-        let Declaration::Declaration(name, _) = &mut declaration.node;
-        if self.variable_map.contains_key(name) {
-            self.error = Some(CompilerError::SemanticError(
-                declaration.row,
-                declaration.column,
-                format!("Variable {} already defined", name),
-            ));
+        let Declaration::Declaration(name, _) = &declaration.node;
+        if self.variable_set.contains(name) {
+            self.error = semantic_error(declaration, SemanticErrorKind::MultipleVariableDefinition(name.clone()));
         } else {
-            let unique_name = self.get_unique_name(name);
-            self.variable_map.insert(name.clone(), unique_name.clone());
-            *name = unique_name;
+            self.variable_set.insert(name.clone());
         }
+
         walk_declaration(self, declaration);
     }
 
@@ -57,35 +45,21 @@ impl Visitor for VariableResolver {
             return;
         }
 
-        match &mut expression.node {
+        match &expression.node {
             Expression::Variable(name) => {
-                if let Some(v) = self.variable_map.get(name) {
-                    *name = v.clone();
-                } else {
-                    self.error = Some(CompilerError::SemanticError(
-                        expression.row,
-                        expression.column,
-                        format!("Undefined variable {} ", name),
-                    ));
+                if !self.variable_set.contains(name) {
+                    self.error = semantic_error(expression, SemanticErrorKind::UndeclaredVariable(name.clone()))
                 }
             }
             Expression::Assignment(left, _) => {
-                if !matches!(left.node, Expression::Variable(_)) {
-                    self.error = Some(CompilerError::SemanticError(
-                        expression.row,
-                        expression.column,
-                        "Invalid left hand side of assignment operator".to_string(),
-                    ));
+                if !left.node.is_assignable() {
+                    self.error = semantic_error(left, SemanticErrorKind::InvalidAssignment)
                 }
             }
             Expression::UnaryExpr(tok, expression) => {
                 if *tok == Token::Increment || *tok == Token::Decrement {
                     if !expression.node.is_assignable() {
-                        self.error = Some(CompilerError::SemanticError(
-                            expression.row,
-                            expression.column,
-                            format!("Cannot {} {:?}", tok, expression),
-                        ))
+                        self.error = semantic_error(expression, SemanticErrorKind::InvalidAssignment)
                     }
                 }
             }
@@ -96,14 +70,11 @@ impl Visitor for VariableResolver {
     }
 }
 
-pub fn resolve_variables(
-    program: &mut ASTNode<Program>,
-) -> Result<HashMap<String, String>, CompilerError> {
+pub fn resolve_variables(program: &mut ASTNode<Program>) -> Result<(), CompilerError> {
     let mut resolver = VariableResolver::new();
     program.accept(&mut resolver);
     if let Some(error) = resolver.error {
-        Err(error)
-    } else {
-        Ok(resolver.variable_map)
+        return Err(error);
     }
+    Ok(())
 }

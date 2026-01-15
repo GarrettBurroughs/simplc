@@ -3,25 +3,14 @@ use std::{
 };
 
 use inkwell::context::Context;
-use thiserror::Error;
 
-use crate::{frontend::{lexer::Lexer, parser::Parser}, semantic::variable_resolution::{resolve_variables}};
+use crate::{frontend::{lexer::Lexer, parser::Parser}, semantic::{label_resolution::resolve_labels, variable_resolution::resolve_variables}};
 
 mod frontend;
 mod codegen;
 mod semantic;
+mod error;
 
-#[derive(Error, Debug, PartialEq, Eq)]
-pub enum CompilerError {
-    #[error("Lex Error at {0} {1}")]
-    LexError(usize, usize),
-
-    #[error("Parse Error at {0} {1} {2}")]
-    ParseError(usize, usize, String),
-
-    #[error("Semantic Error at {0} {1} {2}")]
-    SemanticError(usize, usize, String),
-}
 
 #[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -96,20 +85,18 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let mut parser = Parser::new(tokens);
     let mut program = parser.parse_program()?;
 
-    // Semantic Pass
-    let _variable_map = match resolve_variables(&mut program) {
-        Ok(variable_map) => variable_map,
-        Err(e) => return Err(Box::new(e)),
-    };
+    // Semantic Passes
+    resolve_variables(&mut program)?;
+    resolve_labels(&mut program)?;
 
     if args.ast {
         if args.print {
-            println!("{:#?}", program);
+            println!("{}", program.visualize());
         }
 
         let path = format!("{}.ast", output_name);
         let mut file = File::create(&path)?;
-        writeln!(file, "{:#?}", program)?;
+        writeln!(file, "{}", program.visualize())?;
     }
 
 

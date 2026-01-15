@@ -1,14 +1,27 @@
+use crate::error::Location;
 use crate::frontend::tokens::Token;
 use crate::frontend::tokens::TokenLocation;
 use std::{iter::Peekable, str::Chars};
 
-use crate::CompilerError;
+use crate::error::CompilerError;
+
 pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
     row: usize,
     column: usize,
 }
+
 impl<'a> Lexer<'a> {
+    fn err(&self, c: char) -> CompilerError {
+        CompilerError::LexError {
+            location: Location {
+                row: self.row,
+                column: self.row,
+            },
+            character: c,
+        }
+    }
+
     pub fn new(input: &'a String) -> Self {
         Self {
             chars: input.chars().peekable(),
@@ -68,6 +81,7 @@ impl<'a> Lexer<'a> {
                 "return" => Token::Return,
                 "if" => Token::If,
                 "else" => Token::Else,
+                "goto" => Token::Goto,
                 _ => Token::Identifier(ident),
             };
 
@@ -83,7 +97,7 @@ impl<'a> Lexer<'a> {
                 } else {
                     if let Some(&n) = self.chars.peek() {
                         if n.is_alphabetic() {
-                            return Err(CompilerError::LexError(self.row, self.column));
+                            return Err(self.err(n));
                         }
                     }
                     break;
@@ -202,9 +216,9 @@ impl<'a> Lexer<'a> {
             '}' => Token::CloseBrace,
             ';' => Token::Semicolon,
             '~' => Token::BitwiseCompliment,
-            '?' => Token::QuestionMark, 
+            '?' => Token::QuestionMark,
             ':' => Token::Colon,
-            _ => return Err(CompilerError::LexError(self.row, self.column)),
+            _ => return Err(self.err(c)),
         };
         return Ok(tok);
     }
@@ -226,7 +240,7 @@ impl<'a> Iterator for Lexer<'a> {
         let tok_result = self.lex_token();
         match tok_result {
             Ok(token) => Some(Ok(TokenLocation { token, row, column })),
-            Err(err) => Some(Err(err))
+            Err(err) => Some(Err(err)),
         }
     }
 }

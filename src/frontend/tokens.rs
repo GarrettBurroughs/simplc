@@ -11,6 +11,7 @@ pub enum Token {
     Return,   // return
     If,       // if
     Else,     // else
+    Goto,     // goto
 
     // Repeated tokens
     Increment,  // ++
@@ -180,6 +181,7 @@ impl fmt::Display for Token {
             Token::Else => write!(f, "Else"),
             Token::QuestionMark => write!(f, "QuestionMark"),
             Token::Colon => write!(f, "Colon"),
+            Token::Goto => write!(f, "Goto"),
         }
     }
 }

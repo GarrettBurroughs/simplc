@@ -59,6 +59,33 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Statement> {
 
                 codegen.builder.position_at_end(merge_block);
             }
+            Statement::Label(name, stmt) => {
+                let label_block = codegen.get_basic_block(name);
+
+                let current_block = codegen
+                    .builder
+                    .get_insert_block()
+                    .unwrap();
+
+                if current_block.get_terminator().is_none() {
+                    codegen.builder.build_unconditional_branch(label_block)?;
+                }
+
+                codegen.builder.position_at_end(label_block);
+                stmt.codegen(codegen)?;
+            }
+            Statement::Goto(name) => {
+                let label_block = codegen.get_basic_block(name);
+                codegen.builder.build_unconditional_branch(label_block)?;
+                let current_fn = codegen
+                    .builder
+                    .get_insert_block()
+                    .unwrap()
+                    .get_parent()
+                    .unwrap();
+                let dead_block = codegen.context.append_basic_block(current_fn, "dead");
+                codegen.builder.position_at_end(dead_block);
+            }
         };
         Ok(None)
     }

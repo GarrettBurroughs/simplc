@@ -1,3 +1,5 @@
+use crate::error::Location;
+use crate::error::ParseErrorKind;
 use crate::frontend::ast::ASTNode;
 use crate::frontend::ast::Block;
 use crate::frontend::ast::Declaration;
@@ -8,20 +10,35 @@ use crate::frontend::ast::Statement;
 use std::{iter::Peekable, vec::IntoIter};
 
 use crate::{
-    CompilerError,
+    error::CompilerError,
     frontend::tokens::{Token, TokenLocation},
 };
 
 #[derive(Debug)]
 pub struct Parser {
     tokens: Peekable<IntoIter<TokenLocation>>,
+    node_loc: Location,
+}
+
+impl Location {
+    fn build<T>(self, node: T) -> Result<ASTNode<T>, CompilerError> {
+        Ok(ASTNode::new(node, self))
+    }
 }
 
 impl Parser {
     pub fn new(tokens: Vec<TokenLocation>) -> Self {
         Self {
             tokens: tokens.into_iter().peekable(),
+            node_loc: Location { row: 0, column: 0 },
         }
+    }
+
+    fn err<T>(&self, kind: ParseErrorKind) -> Result<T, CompilerError> {
+        Err(CompilerError::ParseError {
+            location: self.node_loc,
+            kind,
+        })
     }
 
     fn precedence(tok: &Token) -> u32 {
@@ -51,60 +68,56 @@ impl Parser {
         if std::mem::discriminant(&t.token) == std::mem::discriminant(&expected) {
             Ok(t)
         } else {
-            Err(CompilerError::ParseError(
-                t.row,
-                t.column,
-                format!(
-                    "Unexpected token {} expected {}",
-                    t.token,
-                    expected.debug_string()
-                ),
-            ))
+            self.err(ParseErrorKind::Expected {
+                got: t.token,
+                expected: vec![expected],
+            })
         }
     }
 
     fn peek(&mut self) -> Result<&TokenLocation, CompilerError> {
-        self.tokens
-            .peek()
-            .ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))
+        let err = self.err::<&TokenLocation>(ParseErrorKind::EOF);
+        self.tokens.peek().ok_or(err.unwrap_err())
     }
 
     fn get_token(&mut self) -> Result<TokenLocation, CompilerError> {
-        let tok =
-            self.tokens
-                .next()
-                .ok_or(CompilerError::ParseError(0, 0, "Unexpected EOF".into()))?;
+        let tok = self.tokens.next().ok_or(self.err::<&TokenLocation>(ParseErrorKind::EOF).unwrap_err())?;
         Ok(tok)
     }
 
-    fn get_loc(&mut self) -> (usize, usize) {
+    fn set_node_loc(&mut self) -> Location {
         if let Ok(n) = self.peek() {
-            return (n.row, n.column);
+            self.node_loc = Location {
+                row: n.row,
+                column: n.column,
+            };
+            self.node_loc.clone()
+        } else {
+            Location { row: 0, column: 0 }
         }
-        return (0, 0);
     }
 
     pub fn parse_program(&mut self) -> Result<ASTNode<Program>, CompilerError> {
-        let loc = self.get_loc();
+        let loc = self.set_node_loc();
         let function = self.parse_function()?;
         if let Ok(next) = self.peek() {
-            return Err(CompilerError::ParseError(
-                next.row,
-                next.column,
-                "Invalid token at end of file".into(),
-            ));
+            let next_token = next.token.clone();
+            self.set_node_loc();
+            return self.err(ParseErrorKind::InvalidEOF(next_token));
         }
-        return Ok(ASTNode::new(Program::Program(function), loc));
+        return loc.build(Program::Program(function));
     }
 
     fn parse_function(&mut self) -> Result<ASTNode<Function>, CompilerError> {
         self.expect(Token::TypeInt)?;
-        let loc = self.get_loc();
+        let loc = self.set_node_loc();
+
         let identifier = self.expect(Token::Identifier(String::new()))?;
         let ident = match &identifier.token {
             Token::Identifier(ident) => ident.clone(),
             _ => panic!(""),
         };
+
         self.expect(Token::OpenParen)?;
         self.expect(Token::TypeVoid)?;
         self.expect(Token::CloseParen)?;
@@ -118,29 +131,29 @@ impl Parser {
             if let Some(next_tok) = self.tokens.peek()
                 && next_tok.token == Token::TypeInt
             {
-                let loc = self.get_loc();
+                let loc = self.set_node_loc();
                 let decl = self.parse_decl()?;
-                blocks.push(ASTNode::new(Block::Declaration(decl), loc));
+                blocks.push(loc.build(Block::Declaration(decl))?);
             } else {
-                let loc = self.get_loc();
+                let loc = self.set_node_loc();
                 let statement = self.parse_statement()?;
-                blocks.push(ASTNode::new(Block::Statement(statement), loc));
+                blocks.push(loc.build(Block::Statement(statement))?);
             }
         }
 
         self.expect(Token::CloseBrace)?;
 
-        return Ok(ASTNode::new(Function::Function(ident, blocks), loc));
+        loc.build(Function::Function(ident, blocks))
     }
 
     fn parse_statement(&mut self) -> Result<ASTNode<Statement>, CompilerError> {
-        let loc = self.get_loc();
-        match self.peek()?.token {
+        let loc = self.set_node_loc();
+        match &self.peek()?.token {
             Token::Return => {
                 self.get_token()?;
                 let expr = self.parse_expr(0)?;
                 self.expect(Token::Semicolon)?;
-                Ok(ASTNode::new(Statement::Return(expr), loc))
+                loc.build(Statement::Return(expr))
             }
             Token::If => {
                 self.get_token()?;
@@ -151,18 +164,48 @@ impl Parser {
                 if let Token::Else = self.peek()?.token {
                     self.get_token()?;
                     let else_stmt = self.parse_statement()?;
-                    return Ok(ASTNode::new(Statement::If(expr, Box::new(stmt), Some(Box::new(else_stmt))), loc));
+                    return loc.build(Statement::If(
+                        expr,
+                        Box::new(stmt),
+                        Some(Box::new(else_stmt)),
+                    ));
                 }
-                Ok(ASTNode::new(Statement::If(expr, Box::new(stmt), None), loc))
+                loc.build(Statement::If(expr, Box::new(stmt), None))
             }
             Token::Semicolon => {
                 self.get_token()?;
-                Ok(ASTNode::new(Statement::Null, loc))
+                loc.build(Statement::Null)
+            }
+            Token::Identifier(_) => {
+                let expr = self.parse_expr(0)?;
+                if self.peek()?.token == Token::Colon {
+                    // A single "variable" is the same as an identifier
+                    if let Expression::Variable(name) = &expr.node {
+                        // Consume the ":"
+                        self.get_token()?;
+                        let stmt = self.parse_statement()?;
+                        return loc.build(Statement::Label(name.to_string(), Box::new(stmt)));
+                    } else {
+                        // If the expression is more than a single variable, this is invalid
+                        return self.err(ParseErrorKind::InvalidLabel);
+                    }
+                }
+                self.expect(Token::Semicolon)?;
+                loc.build(Statement::Expression(expr))
+            }
+            Token::Goto => {
+                self.get_token()?;
+                let ident = self.get_token()?;
+                if let Token::Identifier(label) = ident.token {
+                    loc.build(Statement::Goto(label))
+                } else {
+                    return self.err(ParseErrorKind::InvalidLabel);
+                }
             }
             _ => {
                 let expr = self.parse_expr(0)?;
                 self.expect(Token::Semicolon)?;
-                Ok(ASTNode::new(Statement::Expression(expr), loc))
+                loc.build(Statement::Expression(expr))
             }
         }
     }
@@ -172,40 +215,36 @@ impl Parser {
         let next_token = self.get_token()?;
         match next_token.token {
             Token::Identifier(ident) => {
-                let loc = self.get_loc();
+                let loc = self.set_node_loc();
                 if let Ok(next_tok) = self.peek()
                     && next_tok.token == Token::Equal
                 {
                     self.get_token()?;
                     let expr = self.parse_expr(0)?;
                     self.expect(Token::Semicolon)?;
-                    Ok(ASTNode::new(
-                        Declaration::Declaration(ident, Some(expr)),
-                        loc,
-                    ))
+                    loc.build(Declaration::Declaration(ident, Some(expr)))
                 } else {
                     self.expect(Token::Semicolon)?;
-                    Ok(ASTNode::new(Declaration::Declaration(ident, None), loc))
+                    loc.build(Declaration::Declaration(ident, None))
                 }
             }
-            _ => Err(CompilerError::ParseError(
-                next_token.row,
-                next_token.column,
-                format!("Unexpected token {} expected Identifier", next_token.token),
-            )),
+            _ => self.err(ParseErrorKind::Expected {
+                got: next_token.token,
+                expected: vec![Token::Identifier("Identifier".to_string())],
+            }),
         }
     }
 
     fn parse_factor(&mut self) -> Result<ASTNode<Expression>, CompilerError> {
-        let loc = self.get_loc();
+        let loc = self.set_node_loc();
         let next_token = self.get_token()?;
         let factor = match next_token.token {
-            Token::IntLiteral(val) => Ok(ASTNode::new(Expression::IntLiteral(val), loc)),
+            Token::IntLiteral(val) => loc.build(Expression::IntLiteral(val)),
             Token::Minus | Token::BitwiseCompliment | Token::Not => {
                 let expr = self.parse_factor()?;
-                Ok(ASTNode::new(
-                    Expression::UnaryExpr(next_token.token.clone(), Box::new(expr)),
-                    loc,
+                loc.build(Expression::UnaryExpr(
+                    next_token.token.clone(),
+                    Box::new(expr),
                 ))
             }
             Token::Increment | Token::Decrement => {
@@ -215,46 +254,42 @@ impl Parser {
                     Token::Decrement => Token::Minus,
                     _ => unreachable!(),
                 };
-                let transform = ASTNode::new(
-                    Expression::BinaryExpr(
-                        op,
-                        Box::new(expr.clone()),
-                        Box::new(ASTNode::new(Expression::IntLiteral(1), loc)),
-                    ),
-                    loc,
-                );
-                let assign = ASTNode::new(
-                    Expression::Assignment(Box::new(expr), Box::new(transform)),
-                    loc,
-                );
-                Ok(assign)
+                let transform = loc.build(Expression::BinaryExpr(
+                    op,
+                    Box::new(expr.clone()),
+                    Box::new(loc.build(Expression::IntLiteral(1))?)
+                ))?;
+                loc.build(Expression::Assignment(Box::new(expr), Box::new(transform)))
             }
             Token::OpenParen => {
                 let inner_expr = self.parse_expr(0);
                 self.expect(Token::CloseParen)?;
                 inner_expr
             }
-            Token::Identifier(ident) => Ok(ASTNode::new(Expression::Variable(ident), loc)),
-            _ => Err(CompilerError::ParseError(
-                next_token.row,
-                next_token.column,
-                format!(
-                    "Unexpected token {}, Expected: IntLiteral, -, !, (, or identifier",
-                    next_token.token
-                ),
-            )),
+            Token::Identifier(ident) => loc.build(Expression::Variable(ident)),
+
+            _ => self.err(ParseErrorKind::Expected {
+                got: next_token.token,
+                expected: vec![
+                    Token::IntLiteral(0),
+                    Token::Minus,
+                    Token::Not,
+                    Token::OpenParen,
+                    Token::Increment,
+                    Token::Decrement,
+                    Token::BitwiseCompliment,
+                    Token::Identifier("Identifier".to_string()),
+                ],
+            }),
         };
 
         if let Ok(next) = self.peek()
             && let Ok(factor) = &factor
         {
             if next.token == Token::Increment || next.token == Token::Decrement {
-                let loc = self.get_loc();
+                let loc = self.set_node_loc();
                 let next = self.get_token()?;
-                return Ok(ASTNode::new(
-                    Expression::UnaryExpr(next.token, Box::new(factor.clone())),
-                    loc,
-                ));
+                return loc.build(Expression::UnaryExpr(next.token, Box::new(factor.clone())));
             }
         }
         factor
@@ -270,11 +305,11 @@ impl Parser {
             if next_precedence < min_precedence {
                 break;
             }
-            let loc = self.get_loc();
+            let loc = self.set_node_loc();
             let operator = self.parse_unop()?;
             left = if operator == Token::Equal {
                 let right = self.parse_expr(next_precedence)?;
-                ASTNode::new(Expression::Assignment(Box::new(left), Box::new(right)), loc)
+                loc.build(Expression::Assignment(Box::new(left), Box::new(right)))?
             } else if operator.is_compound_assignment() {
                 let compound_operator = match operator {
                     Token::PlusAssign => Token::Plus,
@@ -291,34 +326,29 @@ impl Parser {
                 };
 
                 let right = self.parse_expr(next_precedence)?;
-                let addition = ASTNode::new(
-                    Expression::BinaryExpr(
-                        compound_operator,
-                        Box::new(left.clone()),
-                        Box::new(right.clone()),
-                    ),
-                    loc,
-                );
+                let addition = loc.build(Expression::BinaryExpr(
+                    compound_operator,
+                    Box::new(left.clone()),
+                    Box::new(right.clone()),
+                ))?;
 
-                ASTNode::new(
-                    Expression::Assignment(Box::new(left), Box::new(addition)),
-                    loc,
-                )
+                loc.build(Expression::Assignment(Box::new(left), Box::new(addition)))?
             } else if operator == Token::QuestionMark {
                 let middle = self.parse_expr(0)?;
                 self.expect(Token::Colon)?;
                 let right = self.parse_expr(next_precedence)?;
-                ASTNode::new(Expression::Ternary(
-                        Box::new(left), 
-                        Box::new(middle),
-                        Box::new(right)
-                ), loc)
+                loc.build(Expression::Ternary(
+                    Box::new(left),
+                    Box::new(middle),
+                    Box::new(right),
+                ))?
             } else {
                 let right = self.parse_expr(next_precedence + 1)?;
-                ASTNode::new(
-                    Expression::BinaryExpr(operator, Box::new(left), Box::new(right)),
-                    loc,
-                )
+                loc.build(Expression::BinaryExpr(
+                    operator,
+                    Box::new(left),
+                    Box::new(right),
+                ))?
             };
         }
         Ok(left)

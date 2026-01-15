@@ -1,176 +1,27 @@
-ASTNode {
-    node: Program(
-        ASTNode {
-            node: Function(
-                "main",
-                [
-                    ASTNode {
-                        node: Declaration(
-                            ASTNode {
-                                node: Declaration(
-                                    "a",
-                                    Some(
-                                        ASTNode {
-                                            node: IntLiteral(
-                                                1,
-                                            ),
-                                            row: 1,
-                                            column: 12,
-                                        },
-                                    ),
-                                ),
-                                row: 1,
-                                column: 10,
-                            },
-                        ),
-                        row: 1,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Declaration(
-                            ASTNode {
-                                node: Declaration(
-                                    "b",
-                                    Some(
-                                        ASTNode {
-                                            node: IntLiteral(
-                                                2,
-                                            ),
-                                            row: 2,
-                                            column: 12,
-                                        },
-                                    ),
-                                ),
-                                row: 2,
-                                column: 10,
-                            },
-                        ),
-                        row: 2,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Declaration(
-                            ASTNode {
-                                node: Declaration(
-                                    "flag",
-                                    Some(
-                                        ASTNode {
-                                            node: IntLiteral(
-                                                0,
-                                            ),
-                                            row: 3,
-                                            column: 15,
-                                        },
-                                    ),
-                                ),
-                                row: 3,
-                                column: 13,
-                            },
-                        ),
-                        row: 3,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Declaration(
-                            ASTNode {
-                                node: Declaration(
-                                    "c",
-                                    Some(
-                                        ASTNode {
-                                            node: Ternary(
-                                                ASTNode {
-                                                    node: BinaryExpr(
-                                                        GreaterThan,
-                                                        ASTNode {
-                                                            node: Variable(
-                                                                "a",
-                                                            ),
-                                                            row: 5,
-                                                            column: 12,
-                                                        },
-                                                        ASTNode {
-                                                            node: Variable(
-                                                                "b",
-                                                            ),
-                                                            row: 5,
-                                                            column: 16,
-                                                        },
-                                                    ),
-                                                    row: 5,
-                                                    column: 14,
-                                                },
-                                                ASTNode {
-                                                    node: IntLiteral(
-                                                        5,
-                                                    ),
-                                                    row: 5,
-                                                    column: 20,
-                                                },
-                                                ASTNode {
-                                                    node: Ternary(
-                                                        ASTNode {
-                                                            node: Variable(
-                                                                "flag",
-                                                            ),
-                                                            row: 5,
-                                                            column: 24,
-                                                        },
-                                                        ASTNode {
-                                                            node: IntLiteral(
-                                                                6,
-                                                            ),
-                                                            row: 5,
-                                                            column: 31,
-                                                        },
-                                                        ASTNode {
-                                                            node: IntLiteral(
-                                                                7,
-                                                            ),
-                                                            row: 5,
-                                                            column: 35,
-                                                        },
-                                                    ),
-                                                    row: 5,
-                                                    column: 29,
-                                                },
-                                            ),
-                                            row: 5,
-                                            column: 18,
-                                        },
-                                    ),
-                                ),
-                                row: 5,
-                                column: 10,
-                            },
-                        ),
-                        row: 5,
-                        column: 4,
-                    },
-                    ASTNode {
-                        node: Statement(
-                            ASTNode {
-                                node: Return(
-                                    ASTNode {
-                                        node: Variable(
-                                            "c",
-                                        ),
-                                        row: 6,
-                                        column: 11,
-                                    },
-                                ),
-                                row: 6,
-                                column: 4,
-                            },
-                        ),
-                        row: 6,
-                        column: 4,
-                    },
-                ],
-            ),
-            row: 0,
-            column: 4,
-        },
-    ),
-    row: 0,
-    column: 0,
-}
+Program @ 0:0
+  Function "main" @ 0:4
+    Decl "a" @ 1:10 = 
+      Int(1) @ 1:12
+    Decl "b" @ 2:10 = 
+      Int(2) @ 2:12
+    Decl "flag" @ 3:13 = 
+      Int(0) @ 3:15
+    Decl "c" @ 4:9
+    Label "l1": @ 5:0
+      ExprStmt @ 5:4
+        BinaryOp(Plus) @ 5:6
+          Var("a") @ 5:4
+          Var("b") @ 5:8
+    Goto "l1" @ 6:4
+    NullStmt @ 6:11
+    Return @ 7:4
+      Ternary @ 7:17
+        BinaryOp(GreaterThan) @ 7:13
+          Var("a") @ 7:11
+          Var("b") @ 7:15
+        Int(5) @ 7:19
+        Ternary @ 7:28
+          Var("flag") @ 7:23
+          Int(6) @ 7:30
+          Int(7) @ 7:34
+

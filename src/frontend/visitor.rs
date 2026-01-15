@@ -1,4 +1,4 @@
-use crate::frontend::ast::*;
+use crate::{error::{CompilerError, SemanticErrorKind}, frontend::ast::*};
 
 pub trait Visitor {
     fn visit_program(&mut self, program: &mut ASTNode<Program>)
@@ -42,6 +42,7 @@ pub trait Visitor {
     {
         walk_expression(self, expression);
     }
+
 }
 
 pub fn walk_program<T: Visitor>(visitor: &mut T, program: &mut ASTNode<Program>) {
@@ -89,6 +90,8 @@ pub fn walk_statement<T: Visitor>(visitor: &mut T, statement: &mut ASTNode<State
             }
         }
         Statement::Null => {}
+        Statement::Label(_, stmt) => stmt.accept(visitor),
+        Statement::Goto(_) => {}
     }
 }
 
@@ -166,4 +169,11 @@ impl VisitableNode for Expression {
     fn accept<V: Visitor>(node: &mut ASTNode<Self>, visitor: &mut V) {
         visitor.visit_expression(node);
     }
+}
+
+pub fn semantic_error<T>(node: &ASTNode<T>, kind: SemanticErrorKind) -> Option<CompilerError> {
+    Some(CompilerError::SemanticError {
+        location: node.location,
+        kind
+    })
 }
