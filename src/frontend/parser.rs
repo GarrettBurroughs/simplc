@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::error::Location;
 use crate::error::ParseErrorKind;
 use crate::frontend::ast::ASTNode;
@@ -25,6 +27,8 @@ impl Location {
         Ok(ASTNode::new(node, self))
     }
 }
+
+
 
 impl Parser {
     pub fn new(tokens: Vec<TokenLocation>) -> Self {
@@ -99,6 +103,10 @@ impl Parser {
     }
 
     pub fn parse_program(&mut self) -> Result<ASTNode<Program>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Program AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Program AST Node at token: {}", err),
+        }
         let loc = self.set_node_loc();
         let function = self.parse_function()?;
         if let Ok(next) = self.peek() {
@@ -110,6 +118,11 @@ impl Parser {
     }
 
     fn parse_function(&mut self) -> Result<ASTNode<Function>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Function AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Function AST Node at token: {}", err),
+        }
+        
         self.expect(Token::TypeInt)?;
         let loc = self.set_node_loc();
 
@@ -148,6 +161,10 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<ASTNode<Statement>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Statement AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Statement AST Node at token: {}", err),
+        }
         let loc = self.set_node_loc();
         match &self.peek()?.token {
             Token::Return => {
@@ -213,6 +230,10 @@ impl Parser {
     }
 
     fn parse_decl(&mut self) -> Result<ASTNode<Declaration>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Declaration AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Declaration AST Node at token: {}", err),
+        }
         self.expect(Token::TypeInt)?;
         let next_token = self.get_token()?;
         match next_token.token {
@@ -238,6 +259,10 @@ impl Parser {
     }
 
     fn parse_factor(&mut self) -> Result<ASTNode<Expression>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Factor AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Factor AST Node at token: {}", err),
+        }
         let loc = self.set_node_loc();
         let next_token = self.get_token()?;
         let factor = match next_token.token {
@@ -298,6 +323,10 @@ impl Parser {
     }
 
     fn parse_expr(&mut self, min_precedence: u32) -> Result<ASTNode<Expression>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Expression AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Expression AST Node at token: {}", err),
+        }
         let mut left = self.parse_factor()?;
         while let Ok(tok) = self.peek() {
             if !tok.token.is_binop() {
@@ -357,6 +386,10 @@ impl Parser {
     }
 
     fn parse_unop(&mut self) -> Result<Token, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Unop AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Unop AST Node at token: {}", err),
+        }
         let operator = self.get_token()?.token;
         Ok(operator)
     }

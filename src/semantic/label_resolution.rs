@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use log::trace;
+
 use crate::{
     error::{CompilerError, SemanticErrorKind::{AlreadyDeclaredLabel, UndeclaredLabel}},
     frontend::{
@@ -33,6 +35,7 @@ impl Visitor for LabelResolver {
                 if self.label_set.contains(label) {
                     self.error = semantic_error(statement, AlreadyDeclaredLabel(label.clone()));
                 }
+                trace!("Found label: {}", label);
                 self.label_set.insert(label.to_string());
             }
             _ => {}
@@ -73,7 +76,7 @@ impl Visitor for GotoResolver {
     }
 }
 
-pub fn resolve_labels(program: &mut ASTNode<Program>) -> Result<(), CompilerError> {
+pub fn resolve_labels(program: &mut ASTNode<Program>) -> Result<HashSet<String>, CompilerError> {
     let mut label_resolver = LabelResolver::new();
     program.accept(&mut label_resolver);
     if let Some(err) = label_resolver.error {
@@ -84,7 +87,7 @@ pub fn resolve_labels(program: &mut ASTNode<Program>) -> Result<(), CompilerErro
     if let Some(err) = goto_resolver.error {
         return Err(err);
     }
-    Ok(())
+    Ok(goto_resolver.label_set)
 
 }
 

@@ -19,3 +19,18 @@ int main() {
 <identifier> ::= ? An identifier token ?
 <int> ::= ? A constant token ?
 
+
+
+# Logging Levels
+
+error -> errors
+warn -> compiler warnings
+info -> compiler stages
+debug ->  compiler constructs (Tokens, AST, IR)
+trace -> detailed information
+
+
+# Improvements
+[ ] Improved Logging
+[ ] Improved Error Reporting
+[ ] Span based locations + sourcemap

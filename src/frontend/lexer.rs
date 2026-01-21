@@ -1,3 +1,5 @@
+use log::trace;
+
 use crate::error::Location;
 use crate::frontend::tokens::Token;
 use crate::frontend::tokens::TokenLocation;
@@ -237,7 +239,10 @@ impl<'a> Iterator for Lexer<'a> {
         let row = self.row;
         let column = self.column;
 
+        trace!("Lexing character {:?}", self.chars.peek());
         let tok_result = self.lex_token();
+        trace!("Got token {:?} at {}:{}", tok_result, row, column);
+
         match tok_result {
             Ok(token) => Some(Ok(TokenLocation { token, row, column })),
             Err(err) => Some(Err(err)),

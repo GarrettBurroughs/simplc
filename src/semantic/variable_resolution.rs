@@ -1,5 +1,7 @@
 use std::collections::{HashSet};
 
+use log::trace;
+
 use crate::{
     error::{CompilerError, SemanticErrorKind::{self}},
     frontend::{
@@ -34,6 +36,7 @@ impl Visitor for VariableResolver {
         if self.variable_set.contains(name) {
             self.error = semantic_error(declaration, SemanticErrorKind::MultipleVariableDefinition(name.clone()));
         } else {
+            trace!("Found variable in declaration: {}", name);
             self.variable_set.insert(name.clone());
         }
 
