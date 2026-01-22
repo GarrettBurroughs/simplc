@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::sourcemap::Span;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
     Identifier(String), // [a-zA-Z_]\w*\b
@@ -65,8 +67,7 @@ pub enum Token {
 #[derive(Debug, PartialEq, Eq)]
 pub struct TokenLocation {
     pub token: Token,
-    pub row: usize,
-    pub column: usize,
+    pub span: Span,
 }
 
 impl Token {
@@ -188,7 +189,7 @@ impl fmt::Display for Token {
 
 impl fmt::Display for TokenLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}@{}:{}", self.token, self.row, self.column)
+        write!(f, "{}@{}:{}", self.token, self.span.start, self.span.end)
     }
 }
 

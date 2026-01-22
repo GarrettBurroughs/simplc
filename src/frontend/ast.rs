@@ -1,4 +1,4 @@
-use crate::{error::Location, frontend::tokens::Token};
+use crate::{error::Location, frontend::tokens::Token, sourcemap::Span};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {
@@ -44,14 +44,14 @@ pub enum Declaration {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ASTNode<T> {
     pub node: T,
-    pub location: Location
+    pub span: Span
 }
 
 impl<T> ASTNode<T> {
-    pub fn new(node: T, location: Location) -> Self {
+    pub fn new(node: T, span: Span) -> Self {
         ASTNode {
             node,
-            location
+            span
         }
     }
 }

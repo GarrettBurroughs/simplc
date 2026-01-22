@@ -1,21 +1,21 @@
 use thiserror::Error;
 
-use crate::frontend::tokens::Token;
+use crate::{frontend::tokens::Token, sourcemap::Span};
 
 #[derive(Error, Debug)]
 pub enum CompilerError {
     #[error("Lex Error at {location}: unexpected {character}")]
-    LexError { location: Location, character: char },
+    LexError { location: Span, character: char },
 
     #[error("Parse Error at {location} {kind}")]
     ParseError {
-        location: Location,
+        location: Span,
         kind: ParseErrorKind,
     },
 
     #[error("Parse Error at {location} {kind}")]
     SemanticError {
-        location: Location,
+        location: Span,
         kind: SemanticErrorKind,
     },
 }

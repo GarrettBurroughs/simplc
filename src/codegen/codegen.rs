@@ -1,7 +1,15 @@
 use std::collections::{HashMap, HashSet};
 
 use inkwell::{
-    IntPredicate, OptimizationLevel, basic_block::BasicBlock, builder::{Builder, BuilderError}, context::Context, memory_buffer::MemoryBuffer, module::Module, support::LLVMString, targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine}, values::{BasicValueEnum, IntValue, PointerValue}
+    IntPredicate, OptimizationLevel,
+    basic_block::BasicBlock,
+    builder::{Builder, BuilderError},
+    context::Context,
+    memory_buffer::MemoryBuffer,
+    module::Module,
+    support::LLVMString,
+    targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
+    values::{BasicValueEnum, IntValue, PointerValue},
 };
 
 pub struct CodeGen<'ctx> {
@@ -59,18 +67,25 @@ impl<'ctx> CodeGen<'ctx> {
         lhs: IntValue<'ctx>,
         rhs: IntValue<'ctx>,
         name: &str,
-    ) -> Result<IntValue<'ctx>, BuilderError>{
+    ) -> Result<IntValue<'ctx>, BuilderError> {
         let result = self.builder.build_int_compare(op, lhs, rhs, name)?;
-        let ext = self.builder.build_int_z_extend(result, lhs.get_type(), format!("{}_ext", &name).as_str());
+        let ext = self.builder.build_int_z_extend(
+            result,
+            lhs.get_type(),
+            format!("{}_ext", &name).as_str(),
+        );
         return ext;
     }
 
     pub fn get_basic_block(&mut self, name: &str) -> BasicBlock<'ctx> {
-        let function = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+        let function = self
+            .builder
+            .get_insert_block()
+            .unwrap()
+            .get_parent()
+            .unwrap();
         match self.label_map.get(name) {
-            Some(bb) => {
-                *bb
-            }
+            Some(bb) => *bb,
             None => {
                 let bb = self.context.append_basic_block(function, name);
                 self.label_map.insert(name.to_string(), bb);
@@ -78,7 +93,6 @@ impl<'ctx> CodeGen<'ctx> {
             }
         }
     }
-
 }
 
 pub trait CodeGenerator<'ctx> {

@@ -7,7 +7,7 @@ fn indent(level: usize) -> String {
 
 // Helper to format the location cleanly
 fn format_loc<T>(node: &ASTNode<T>) -> String {
-    format!("@ {}:{}", node.location.row, node.location.column)
+    format!("@ {}:{}", node.span.start, node.span.end)
 }
 
 impl ASTNode<Program> {

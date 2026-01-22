@@ -10,14 +10,15 @@ use inkwell::context::Context;
 use log::{debug, info};
 
 use crate::{
-    frontend::{lexer::Lexer, parser::Parser},
-    semantic::{label_resolution::resolve_labels, variable_resolution::resolve_variables},
+    frontend::{lexer::Lexer, parser::Parser, source_ast_visualizer::SourceASTVisualizer},
+    semantic::{label_resolution::resolve_labels, variable_resolution::resolve_variables}, sourcemap::SourceFile,
 };
 
 mod codegen;
 mod error;
 mod frontend;
 mod semantic;
+mod sourcemap;
 
 #[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -48,6 +49,10 @@ struct Args {
     /// Output AST
     #[arg(long)]
     ast: bool,
+
+    /// Output AST with source
+    #[arg(long)]
+    source_ast: bool,
 
     /// Debug level
     #[arg(long)]
@@ -85,9 +90,10 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let contents = fs::read_to_string(&args.file)
         .map_err(|_| format!("Could not read file: {}", args.file))?;
 
+    let source_file = SourceFile::new(args.file, contents);
     info!("Running Lexical Analysis for {}", output_name);
     // Lexical Analysis
-    let lexer = Lexer::new(&contents);
+    let lexer = Lexer::new(&source_file);
     let tokens: Vec<_> = lexer.collect::<Result<Vec<_>, _>>()?;
     tokens.iter().for_each(|t| debug!("{}", t));
 
@@ -118,6 +124,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         let path = format!("{}.ast", output_name);
         let mut file = File::create(&path)?;
         writeln!(file, "{}", program.visualize())?;
+    }
+
+    let visualizer = SourceASTVisualizer::new(&source_file);
+    let source_viz = visualizer.visualize(&program);
+    debug!("Source Visualizer:\n {}", source_viz);
+    if args.source_ast {
+        let path = format!("{}.srcmp", output_name);
+        let mut file = File::create(&path)?;
+        writeln!(file, "{}", source_viz)?;
     }
 
     // Code Generation
