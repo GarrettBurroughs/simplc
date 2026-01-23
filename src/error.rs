@@ -1,35 +1,37 @@
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
-use crate::{frontend::tokens::Token, sourcemap::Span};
+use crate::frontend::tokens::Token;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Diagnostic)]
 pub enum CompilerError {
-    #[error("Lex Error at {location}: unexpected {character}")]
-    LexError { location: Span, character: char },
+    #[error("Unexpected character: {character}")]
+    #[diagnostic(code(lex::unsupported_char))]
+    LexError {
+        #[label("here")]
+        location: SourceSpan,
+        character: char,
+    },
 
-    #[error("Parse Error at {location} {kind}")]
+    #[error("Semantic error: {kind}")]
+    #[diagnostic(code(lex::parse_error))]
     ParseError {
-        location: Span,
+        #[label("here")]
+        location: SourceSpan,
         kind: ParseErrorKind,
     },
 
-    #[error("Parse Error at {location} {kind}")]
+    #[error("Parse Error: {kind}")]
+    #[diagnostic(code(lex::semantic_error))]
     SemanticError {
-        location: Span,
+        #[label("here")]
+        location: SourceSpan,
         kind: SemanticErrorKind,
     },
-}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Location {
-    pub row: usize,
-    pub column: usize,
-}
-
-impl std::fmt::Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.row + 1, self.column + 1)
-    }
+    #[error("System error: {kind}")]
+    #[diagnostic(code(lex::system_error))]
+    SystemError { kind: SystemErrorKind },
 }
 
 #[derive(Error, Debug)]
@@ -43,7 +45,7 @@ pub enum ParseErrorKind {
     InvalidEOF(Token),
 
     #[error("Invalid Label")]
-    InvalidLabel
+    InvalidLabel,
 }
 
 #[derive(Error, Debug)]
@@ -62,5 +64,13 @@ pub enum SemanticErrorKind {
 
     #[error("use of undeclared label: {0}")]
     UndeclaredLabel(String),
+}
 
+#[derive(Error, Debug)]
+pub enum SystemErrorKind {
+    #[error("Cannot write to {0}")]
+    FileWrite(String),
+
+    #[error("Error generating assembly instructions")]
+    AssemblyGeneration,
 }

@@ -1,4 +1,4 @@
-use crate::{error::Location, frontend::tokens::Token, sourcemap::Span};
+use crate::{frontend::tokens::Token, sourcemap::Span};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Statement {

@@ -173,7 +173,7 @@ impl VisitableNode for Expression {
 
 pub fn semantic_error<T>(node: &ASTNode<T>, kind: SemanticErrorKind) -> Option<CompilerError> {
     Some(CompilerError::SemanticError {
-        location: node.span,
+        location: node.span.into(),
         kind
     })
 }

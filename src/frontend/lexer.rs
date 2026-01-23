@@ -22,7 +22,7 @@ impl<'a> Lexer<'a> {
             location: Span {
                 start: self.position,
                 end: self.position + 1,
-            },
+            }.into(),
             character: c,
         }
     }

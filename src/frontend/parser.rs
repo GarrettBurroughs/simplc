@@ -39,7 +39,7 @@ impl Parser {
             .peek()
             .map(|t| t.span)
             .unwrap_or(Span { start: 0, end: 0 });
-        Err(CompilerError::ParseError { location, kind })
+        Err(CompilerError::ParseError { location: location.into(), kind })
     }
 
     fn precedence(tok: &Token) -> u32 {
@@ -78,7 +78,7 @@ impl Parser {
 
     fn peek(&mut self) -> Result<&TokenLocation, CompilerError> {
         let err = CompilerError::ParseError {
-            location: Span { start: 0, end: 0 },
+            location: Span { start: 0, end: 0 }.into(),
             kind: ParseErrorKind::EOF,
         };
         self.tokens.peek().ok_or(err)
