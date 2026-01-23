@@ -24,20 +24,20 @@ impl<'a> SourceASTVisualizer<'a> {
 
     fn visit_function(&self, function: &ASTNode<Function>) -> String {
         let source = &self.source_file.contents[function.span.start..function.span.end];
-        let Function::Function(name, blocks) = &function.node;
+        let Function::Function(name, block_items) = &function.node;
         let mut output = format!("Function({}): \n'{}'\n", name, source);
-        for block in blocks {
-            output.push_str(&self.visit_block(block));
+        for block_item in block_items {
+            output.push_str(&self.visit_block_item(block_item));
         }
         output
     }
 
-    fn visit_block(&self, block: &ASTNode<Block>) -> String {
-        let source = &self.source_file.contents[block.span.start..block.span.end];
-        let mut output = format!("Block: \n'{}'\n", source);
-        let contents = match &block.node {
-            Block::Declaration(declaration) => self.visit_declaration(declaration),
-            Block::Statement(statement) => self.visit_statement(statement),
+    fn visit_block_item(&self, block_item: &ASTNode<BlockItem>) -> String {
+        let source = &self.source_file.contents[block_item.span.start..block_item.span.end];
+        let mut output = format!("Block Item: \n'{}'\n", source);
+        let contents = match &block_item.node {
+            BlockItem::Declaration(declaration) => self.visit_declaration(declaration),
+            BlockItem::Statement(statement) => self.visit_statement(statement),
         };
         output.push_str(&contents);
         output

@@ -3,7 +3,7 @@
 ```
 <program>     ::= <function>
 <function>    ::= "int" <identifier> "(" "void" ")" "{" { <block> } "}"
-<block>       ::= <statement> | <declaration>
+<block-item>       ::= <statement> | <declaration>
 <statement>   ::= "return" <exp> ";" | <expr> ";" | ";" | <identifier> ":" <statement> | "goto" <identifier> ";"
                 | "if" "(" <expr> ")" <statement> [ "else" <statement> ]
 <declaration> ::= "int" <identifier> [ "=" <expr> ] ";"

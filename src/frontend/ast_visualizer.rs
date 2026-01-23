@@ -1,5 +1,5 @@
 use crate::{
-    frontend::ast::{ASTNode, Block, Declaration, Expression, Function, Program, Statement},
+    frontend::ast::{ASTNode, BlockItem, Declaration, Expression, Function, Program, Statement},
     sourcemap::SourceFile,
 };
 
@@ -39,25 +39,25 @@ impl<'a> ASTVisualizer<'a> {
 
     fn visit_function(&self, function: &ASTNode<Function>, level: usize) -> String {
         match &function.node {
-            Function::Function(name, blocks) => {
+            Function::Function(name, block_items) => {
                 let mut output = format!(
                     "{}Function \"{}\" {}\n",
                     indent(level),
                     name,
                     self.format_loc(function)
                 );
-                for block in blocks {
-                    output.push_str(&self.visit_block(block, level + 1));
+                for block_item in block_items {
+                    output.push_str(&self.visit_block_item(block_item, level + 1));
                 }
                 output
             }
         }
     }
 
-    fn visit_block(&self, block: &ASTNode<Block>, level: usize) -> String {
+    fn visit_block_item(&self, block: &ASTNode<BlockItem>, level: usize) -> String {
         match &block.node {
-            Block::Statement(stmt) => self.visit_statement(stmt, level),
-            Block::Declaration(decl) => self.visit_declaration(decl, level),
+            BlockItem::Statement(stmt) => self.visit_statement(stmt, level),
+            BlockItem::Declaration(decl) => self.visit_declaration(decl, level),
         }
     }
 

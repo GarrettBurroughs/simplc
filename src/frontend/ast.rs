@@ -22,7 +22,7 @@ pub enum Expression {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Function {
-    Function(String, Vec<ASTNode<Block>>),
+    Function(String, Vec<ASTNode<BlockItem>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -31,7 +31,7 @@ pub enum Program {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Block {
+pub enum BlockItem {
     Declaration(ASTNode<Declaration>),
     Statement(ASTNode<Statement>),
 }

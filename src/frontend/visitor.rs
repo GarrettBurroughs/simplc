@@ -15,11 +15,11 @@ pub trait Visitor {
         walk_function(self, function);
     }
 
-    fn visit_block(&mut self, block: &mut ASTNode<Block>)
+    fn visit_block_item(&mut self, block_item: &mut ASTNode<BlockItem>)
     where
         Self: Sized,
     {
-        walk_block(self, block);
+        walk_block_item(self, block_item);
     }
 
     fn visit_declaration(&mut self, declaration: &mut ASTNode<Declaration>)
@@ -53,18 +53,18 @@ pub fn walk_program<T: Visitor>(visitor: &mut T, program: &mut ASTNode<Program>)
 
 pub fn walk_function<T: Visitor>(visitor: &mut T, function: &mut ASTNode<Function>) {
     match &mut function.node {
-        Function::Function(_, blocks) => {
-            for block in blocks {
-                block.accept(visitor);
+        Function::Function(_, block_items) => {
+            for block_item in block_items {
+                block_item.accept(visitor);
             }
         }
     }
 }
 
-pub fn walk_block<T: Visitor>(visitor: &mut T, block: &mut ASTNode<Block>) {
-    match &mut block.node {
-        Block::Declaration(decl) => decl.accept(visitor),
-        Block::Statement(stmt) => stmt.accept(visitor),
+pub fn walk_block_item<T: Visitor>(visitor: &mut T, block_item: &mut ASTNode<BlockItem>) {
+    match &mut block_item.node {
+        BlockItem::Declaration(decl) => decl.accept(visitor),
+        BlockItem::Statement(stmt) => stmt.accept(visitor),
     }
 }
 
@@ -147,9 +147,9 @@ impl VisitableNode for Function {
     }
 }
 
-impl VisitableNode for Block {
+impl VisitableNode for BlockItem {
     fn accept<V: Visitor>(node: &mut ASTNode<Self>, visitor: &mut V) {
-        visitor.visit_block(node);
+        visitor.visit_block_item(node);
     }
 }
 

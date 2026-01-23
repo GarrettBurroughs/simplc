@@ -2,7 +2,7 @@ use log::trace;
 
 use crate::error::ParseErrorKind;
 use crate::frontend::ast::ASTNode;
-use crate::frontend::ast::Block;
+use crate::frontend::ast::BlockItem;
 use crate::frontend::ast::Declaration;
 use crate::frontend::ast::Expression;
 use crate::frontend::ast::Function;
@@ -128,7 +128,7 @@ impl Parser {
         self.expect(Token::CloseParen)?;
         self.expect(Token::OpenBrace)?;
 
-        let mut blocks = Vec::new();
+        let mut block_items = Vec::new();
         while let Some(tok) = self.tokens.peek() {
             if tok.token == Token::CloseBrace {
                 break;
@@ -138,18 +138,18 @@ impl Parser {
             {
                 let decl = self.parse_decl()?;
                 let span = decl.span;
-                blocks.push(span.build(Block::Declaration(decl))?);
+                block_items.push(span.build(BlockItem::Declaration(decl))?);
             } else {
                 let statement = self.parse_statement()?;
                 let span = statement.span;
-                blocks.push(span.build(Block::Statement(statement))?);
+                block_items.push(span.build(BlockItem::Statement(statement))?);
             }
         }
 
         let end = self.expect(Token::CloseBrace)?;
 
         let span = start.merge(&end.span);
-        span.build(Function::Function(ident, blocks))
+        span.build(Function::Function(ident, block_items))
     }
 
     fn parse_statement(&mut self) -> Result<ASTNode<Statement>, CompilerError> {
