@@ -1,27 +1,17 @@
-Program @ 0:0
-  Function "main" @ 0:4
-    Decl "a" @ 1:10 = 
-      Int(1) @ 1:12
-    Decl "b" @ 2:10 = 
-      Int(2) @ 2:12
-    Decl "flag" @ 3:13 = 
-      Int(0) @ 3:15
-    Decl "c" @ 4:9
-    Label "l1": @ 5:0
-      ExprStmt @ 5:4
-        BinaryOp(Plus) @ 5:6
-          Var("a") @ 5:4
-          Var("b") @ 5:8
-    Goto "l1" @ 6:4
-    NullStmt @ 6:11
-    Return @ 7:4
-      Ternary @ 7:17
-        BinaryOp(GreaterThan) @ 7:13
-          Var("a") @ 7:11
-          Var("b") @ 7:15
-        Int(5) @ 7:19
-        Ternary @ 7:28
-          Var("flag") @ 7:23
-          Int(6) @ 7:30
-          Int(7) @ 7:34
+Program @ 1:1
+  Function "main" @ 1:1
+    Block @ 1:16
+      Decl "x_0" @ 2:5 = 
+        Int(0) @ 2:13
+      Switch#switch_0 @ 3:5
+        Int(0) @ 3:13
+        Block @ 3:16
+          ExprStmt @ 4:9
+            Assign @ 4:9
+              Var("x_0") @ 4:9
+              BinaryOp(Plus) @ 4:9
+                Var("x_0") @ 4:9
+                Int(1) @ 4:14
+      Return @ 6:5
+        Int(0) @ 6:12
 

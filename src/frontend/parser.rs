@@ -2,10 +2,12 @@ use log::trace;
 
 use crate::error::ParseErrorKind;
 use crate::frontend::ast::ASTNode;
+use crate::frontend::ast::Block;
 use crate::frontend::ast::BlockItem;
 use crate::frontend::ast::Declaration;
 use crate::frontend::ast::Expression;
 use crate::frontend::ast::Function;
+use crate::frontend::ast::Initializer;
 use crate::frontend::ast::Program;
 use crate::frontend::ast::Statement;
 use crate::sourcemap::Span;
@@ -92,6 +94,7 @@ impl Parser {
         Ok(tok)
     }
 
+
     pub fn parse_program(&mut self) -> Result<ASTNode<Program>, CompilerError> {
         match self.peek() {
             Ok(tok) => trace!("Parsing Program AST Node at token: {}", tok),
@@ -126,8 +129,22 @@ impl Parser {
         self.expect(Token::OpenParen)?;
         self.expect(Token::TypeVoid)?;
         self.expect(Token::CloseParen)?;
-        self.expect(Token::OpenBrace)?;
 
+        let body = self.parse_block()?;
+
+        let span = start.merge(&body.span);
+        span.build(Function::Function(ident, body))
+    }
+
+    pub fn parse_block(&mut self) -> Result<ASTNode<Block>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Block AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Block AST Node at token: {}", err),
+        }
+
+        let start = self.peek()?.span;
+
+        self.expect(Token::OpenBrace)?;
         let mut block_items = Vec::new();
         while let Some(tok) = self.tokens.peek() {
             if tok.token == Token::CloseBrace {
@@ -147,9 +164,9 @@ impl Parser {
         }
 
         let end = self.expect(Token::CloseBrace)?;
-
+        
         let span = start.merge(&end.span);
-        span.build(Function::Function(ident, block_items))
+        span.build(Block::Block(block_items)) 
     }
 
     fn parse_statement(&mut self) -> Result<ASTNode<Statement>, CompilerError> {
@@ -191,6 +208,11 @@ impl Parser {
                 self.get_token()?;
                 start.build(Statement::Null)
             }
+            Token::OpenBrace => {
+                let block = self.parse_block()?;
+                let span = start.merge(&block.span);
+                span.build(Statement::Compound(block))
+            }
             Token::Identifier(_) => {
                 let expr = self.parse_expr(0)?;
                 if self.peek()?.token == Token::Colon {
@@ -221,11 +243,115 @@ impl Parser {
                     return self.err(ParseErrorKind::InvalidLabel);
                 }
             }
+            Token::Do => {
+                self.get_token()?;
+                let stmt = self.parse_statement()?;
+                self.expect(Token::While)?;
+                self.expect(Token::OpenParen)?;
+                let expr = self.parse_expr(0)?;
+                self.expect(Token::CloseParen)?;
+                let end = self.expect(Token::Semicolon)?;
+                let span = start.merge(&end.span);
+                span.build(Statement::DoWhile(Box::new(stmt), expr, None))
+            }
+            Token::While => {
+                self.get_token()?;
+                self.expect(Token::OpenParen)?;
+                let expr = self.parse_expr(0)?;
+                self.expect(Token::CloseParen)?;
+                let stmt = self.parse_statement()?;
+                let span = start.merge(&stmt.span);
+                span.build(Statement::While(expr, Box::new(stmt), None))
+            }
+            Token::For => {
+                self.get_token()?;
+                self.expect(Token::OpenParen)?;
+                let initializer = self.parse_initializer()?;
+                let cond = self.parse_optional_expr()?;
+                self.expect(Token::Semicolon)?;
+                let post = self.parse_optional_expr()?;
+                self.expect(Token::CloseParen)?;
+                let stmt = self.parse_statement()?;
+                let span = start.merge(&stmt.span);
+                span.build(Statement::For(initializer, cond, post, Box::new(stmt), None))
+            }
+            Token::Switch => {
+                self.get_token()?;
+                self.expect(Token::OpenParen)?;
+                let expr = self.parse_expr(0)?;
+                self.expect(Token::CloseParen)?;
+                let stmt = self.parse_statement()?;
+                let span = start.merge(&stmt.span);
+                span.build(Statement::Switch(expr, Box::new(stmt), None))
+            }
+            Token::Case => {
+                self.get_token()?;
+                let expr = self.parse_expr(0)?;
+                self.expect(Token::Colon)?;
+                let stmt = self.parse_statement()?;
+                let span = start.merge(&stmt.span);
+                span.build(Statement::Case(expr, Box::new(stmt), None))
+            }
+            Token::Default => {
+                self.get_token()?;
+                self.expect(Token::Colon)?;
+                let stmt = self.parse_statement()?;
+                let span = start.merge(&stmt.span);
+                span.build(Statement::Default(Box::new(stmt), None))
+            }
+            Token::Break => {
+                self.get_token()?;
+                let end = self.expect(Token::Semicolon)?;
+                let span = start.merge(&end.span);
+                span.build(Statement::Break(None))
+            }
+            Token::Continue => {
+                self.get_token()?;
+                let end = self.expect(Token::Semicolon)?;
+                let span = start.merge(&end.span);
+                span.build(Statement::Continue(None))
+            }
             _ => {
                 let expr = self.parse_expr(0)?;
                 let end = self.expect(Token::Semicolon)?;
                 let span = start.merge(&end.span);
                 span.build(Statement::Expression(expr))
+            }
+        }
+    }
+
+    fn parse_optional_expr(&mut self) -> Result<Option<ASTNode<Expression>>, CompilerError> {
+        if self.peek()?.token == Token::Semicolon || self.peek()?.token == Token::CloseParen {
+            Ok(None)
+        } else {
+            Ok(Some(self.parse_expr(0)?))
+        }
+    }
+
+    fn parse_initializer(&mut self) -> Result<ASTNode<Initializer>, CompilerError> {
+        match self.peek() {
+            Ok(tok) => trace!("Parsing Initializer AST Node at token: {}", tok),
+            Err(err) => trace!("Parsing Initializer AST Node at token: {}", err),
+        }
+
+        let start = self.peek()?.span;
+        
+        match self.peek()?.token {
+            Token::TypeInt => {
+                let decl = self.parse_decl()?;
+                let span = start.merge(&decl.span);
+                span.build(Initializer::Decl(decl))
+            }
+            Token::Semicolon => {
+                let semicolon = self.get_token()?;
+                let span = start.merge(&semicolon.span);
+                span.build(Initializer::Exp(None))
+            }
+            _ => {
+                let expr = self.parse_expr(0)?;
+                let end = self.expect(Token::Semicolon)?;
+                let span = start.merge(&end.span);
+                span.build(Initializer::Exp(Some(expr)))
             }
         }
     }

@@ -12,6 +12,8 @@ use inkwell::{
     values::{BasicValueEnum, IntValue, PointerValue},
 };
 
+use crate::semantic::switch_collection::Switch;
+
 pub struct CodeGen<'ctx> {
     pub context: &'ctx Context,
     pub module: Module<'ctx>,
@@ -20,10 +22,17 @@ pub struct CodeGen<'ctx> {
     pub variable_map: HashMap<String, PointerValue<'ctx>>,
     pub label_map: HashMap<String, BasicBlock<'ctx>>,
     pub gen_l_value: bool,
+    pub switch_statements: HashMap<String, Switch>,
+    pub switch_map: HashMap<String, Vec<(IntValue<'ctx>, BasicBlock<'ctx>)>>,
 }
 
 impl<'ctx> CodeGen<'ctx> {
-    pub fn new(context: &'ctx Context, program_name: &str, variables: HashSet<String>) -> Self {
+    pub fn new(
+        context: &'ctx Context,
+        program_name: &str,
+        variables: HashSet<String>,
+        switch_statements: HashMap<String, Switch>,
+    ) -> Self {
         CodeGen {
             context: context,
             module: context.create_module(program_name),
@@ -31,6 +40,8 @@ impl<'ctx> CodeGen<'ctx> {
             variables,
             variable_map: HashMap::new(),
             label_map: HashMap::new(),
+            switch_statements: switch_statements,
+            switch_map: HashMap::new(),
             gen_l_value: false,
         }
     }
@@ -53,7 +64,7 @@ impl<'ctx> CodeGen<'ctx> {
                 "generic",
                 "",
                 OptimizationLevel::None,
-                RelocMode::Default,
+                RelocMode::PIC,
                 CodeModel::Default,
             )
             .unwrap();

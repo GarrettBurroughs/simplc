@@ -10,24 +10,20 @@ if [ -z "$SOURCE_FILE" ]; then
 fi
 
 # 2. Derive filenames (e.g., main.c -> main.s and main)
-# ${SOURCE_FILE%.c} removes the .c extension
 BASE_NAME=${SOURCE_FILE%.c}
 ASSEMBLY_FILE="${BASE_NAME}.s"
 EXECUTABLE_NAME="$BASE_NAME"
 
 # 3. Preprocess the C file
-# This handles #include and #define (using gcc's preprocessor)
 gcc -E -P "$SOURCE_FILE" -o "${BASE_NAME}.i"
 
-# 4. Run your compiler (The core of Chapter 1)
-# This converts the preprocessed file (.i) into assembly (.s)
+# 4. Run the compiler
 /home/gburroughs/dev/rust/compiler/target/debug/compiler "${BASE_NAME}.i"
 if [ $? != 0 ]; then 
     exit 1
 fi
 
 # 5. Assemble and Link
-# This converts the assembly file into a final executable
 gcc "$ASSEMBLY_FILE" -o "$EXECUTABLE_NAME"
 
 # 6. Cleanup (Optional)

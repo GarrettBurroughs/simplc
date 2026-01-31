@@ -11,13 +11,10 @@ use log::{debug, info};
 use miette::NamedSource;
 
 use crate::{
-    error::CompilerError,
-    frontend::{
+    codegen::codegen::CodeGen, error::CompilerError, frontend::{
         ast_visualizer::ASTVisualizer, lexer::Lexer, parser::Parser,
         source_ast_visualizer::SourceASTVisualizer,
-    },
-    semantic::{label_resolution::resolve_labels, variable_resolution::resolve_variables},
-    sourcemap::SourceFile,
+    }, semantic::{label_resolution::resolve_labels, loop_labeling::label_loops, switch_collection::collect_switch, variable_resolution::resolve_variables}, sourcemap::SourceFile
 };
 
 mod codegen;
@@ -98,33 +95,6 @@ fn main() {
             source_file.file_path,
             source_file.contents.clone(),
         ));
-        // let error_message = match e {
-        //     CompilerError::LexError {
-        //         location,
-        //         character,
-        //     } => {
-        //         format!(
-        //             "Parse Error [{}]: unexpected character {}",
-        //             source_file.display(location.start),
-        //             character
-        //         )
-        //     }
-        //     CompilerError::ParseError { location, kind } => {
-        //         format!(
-        //             "Parse Error [{}]: {}",
-        //             source_file.display(location.start),
-        //             kind
-        //         )
-        //     }
-        //     CompilerError::SemanticError { location, kind } => {
-        //         format!(
-        //             "Semantic Error [{}]: {}",
-        //             source_file.display(location.start),
-        //             kind
-        //         )
-        //     }
-        //     CompilerError::SystemError { kind } => format!("System Error: {}", kind),
-        // };
         eprintln!("{:?}", report);
         exit(1);
     };
@@ -163,6 +133,12 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
     info!("Running label resolution for {}", output_name);
     let labels = resolve_labels(&mut program)?;
     debug!("Label Table: {:?}", labels);
+    info!("Running loop labeling for {}", output_name);
+    label_loops(&mut program)?;
+
+    let switch_statements = collect_switch(&mut program)?;
+    debug!("switch statements {:?}", switch_statements);
+
 
     let ast_visualizer = ASTVisualizer::new(&source_file);
     let ast_viz = ast_visualizer.visualize(&program);
@@ -186,7 +162,7 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
     // Code Generation
     info!("Running code generation for {}", output_name);
     let context = Context::create();
-    let mut generator = codegen::codegen::CodeGen::new(&context, "main", variables);
+    let mut generator = CodeGen::new(&context, "main", variables, switch_statements);
     generator.run_codegen(&program);
 
     let ir = generator.emit_ir();

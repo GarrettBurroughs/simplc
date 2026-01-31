@@ -90,6 +90,14 @@ impl<'a> Lexer<'a> {
                 "if" => Token::If,
                 "else" => Token::Else,
                 "goto" => Token::Goto,
+                "do" => Token::Do,
+                "while" => Token::While,
+                "for" => Token::For,
+                "switch" => Token::Switch,
+                "case" => Token::Case,
+                "default" => Token::Default,
+                "break" => Token::Break,
+                "continue" => Token::Continue,
                 _ => Token::Identifier(ident),
             };
 

@@ -4,10 +4,29 @@ use crate::{frontend::tokens::Token, sourcemap::Span};
 pub enum Statement {
     Return(ASTNode<Expression>),
     Expression(ASTNode<Expression>),
-    If(ASTNode<Expression>, Box<ASTNode<Statement>>, Option<Box<ASTNode<Statement>>>),
+    If(
+        ASTNode<Expression>,
+        Box<ASTNode<Statement>>,
+        Option<Box<ASTNode<Statement>>>,
+    ),
+    Compound(ASTNode<Block>),
     Label(String, Box<ASTNode<Statement>>),
     Goto(String),
     Null,
+    While(ASTNode<Expression>, Box<ASTNode<Statement>>, Option<String>),
+    DoWhile(Box<ASTNode<Statement>>, ASTNode<Expression>, Option<String>),
+    For(
+        ASTNode<Initializer>,
+        Option<ASTNode<Expression>>,
+        Option<ASTNode<Expression>>,
+        Box<ASTNode<Statement>>,
+        Option<String>,
+    ),
+    Switch(ASTNode<Expression>, Box<ASTNode<Statement>>, Option<String>),
+    Case(ASTNode<Expression>, Box<ASTNode<Statement>>, Option<String>),
+    Default(Box<ASTNode<Statement>>, Option<String>),
+    Break(Option<String>),
+    Continue(Option<String>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -17,12 +36,21 @@ pub enum Expression {
     UnaryExpr(Token, Box<ASTNode<Expression>>),
     BinaryExpr(Token, Box<ASTNode<Expression>>, Box<ASTNode<Expression>>),
     Assignment(Box<ASTNode<Expression>>, Box<ASTNode<Expression>>),
-    Ternary(Box<ASTNode<Expression>>, Box<ASTNode<Expression>>, Box<ASTNode<Expression>>),
+    Ternary(
+        Box<ASTNode<Expression>>,
+        Box<ASTNode<Expression>>,
+        Box<ASTNode<Expression>>,
+    ),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Function {
-    Function(String, Vec<ASTNode<BlockItem>>),
+    Function(String, ASTNode<Block>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Block {
+    Block(Vec<ASTNode<BlockItem>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -37,6 +65,12 @@ pub enum BlockItem {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum Initializer {
+    Decl(ASTNode<Declaration>),
+    Exp(Option<ASTNode<Expression>>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum Declaration {
     Declaration(String, Option<ASTNode<Expression>>),
 }
@@ -44,15 +78,12 @@ pub enum Declaration {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ASTNode<T> {
     pub node: T,
-    pub span: Span
+    pub span: Span,
 }
 
 impl<T> ASTNode<T> {
     pub fn new(node: T, span: Span) -> Self {
-        ASTNode {
-            node,
-            span
-        }
+        ASTNode { node, span }
     }
 }
 
@@ -62,6 +93,38 @@ impl Expression {
             Expression::Variable(_) => true,
             _ => false,
         }
+    }
 
+    pub fn evaluate_const(&self) -> i32 {
+        match &self {
+            Expression::IntLiteral(val) => *val,
+            Expression::BinaryExpr(op, rhs, lhs) => {
+                let lhs = lhs.node.evaluate_const();
+                let rhs = rhs.node.evaluate_const();
+                match op {
+                    Token::Plus => lhs + rhs,
+                    Token::Minus => lhs - rhs,
+                    Token::Div => lhs / rhs, 
+                    Token::Mul => lhs * rhs,
+                    Token::Percent => lhs % rhs,
+                    Token::LogicalAnd => (lhs != 0 && rhs != 0) as i32,
+                    Token::LogicalOr => (lhs != 0 || rhs != 0) as i32,
+                    Token::BitwiseAnd => lhs & rhs,
+                    Token::BitwiseOr => lhs | rhs,
+                    Token::BitwiseXOR => lhs ^ rhs,
+                    Token::LeftShift => lhs << rhs,
+                    Token::RightShift => lhs >> rhs,
+                    Token::LogicalEq => (lhs == rhs) as i32,
+                    Token::NotEqual => (lhs != rhs) as i32,
+                    Token::GreaterThan => (lhs > rhs) as i32,
+                    Token::GreaterThanEq => (lhs >= rhs) as i32,
+                    Token::LessThan => (lhs < rhs) as i32,
+                    Token::LessThanEq => (lhs <= rhs) as i32,
+                    _ => panic!("Invalid const expr")
+
+                }
+            }
+            _ => panic!("Invalid const expr")
+        }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{error::{CompilerError, SemanticErrorKind}, frontend::ast::*};
+use crate::{error::{CompilerError, SemanticErrorKind}, frontend::ast::*, sourcemap::Span};
 
 pub trait Visitor {
     fn visit_program(&mut self, program: &mut ASTNode<Program>)
@@ -13,6 +13,13 @@ pub trait Visitor {
         Self: Sized,
     {
         walk_function(self, function);
+    }
+
+    fn visit_block(&mut self, block: &mut ASTNode<Block>)
+    where
+        Self: Sized,
+    {
+        walk_block(self, block);
     }
 
     fn visit_block_item(&mut self, block_item: &mut ASTNode<BlockItem>)
@@ -43,6 +50,13 @@ pub trait Visitor {
         walk_expression(self, expression);
     }
 
+    fn visit_initializer(&mut self, initializer: &mut ASTNode<Initializer>)
+    where
+        Self: Sized,
+    {
+        walk_initializer(self, initializer);
+    }
+
 }
 
 pub fn walk_program<T: Visitor>(visitor: &mut T, program: &mut ASTNode<Program>) {
@@ -53,13 +67,23 @@ pub fn walk_program<T: Visitor>(visitor: &mut T, program: &mut ASTNode<Program>)
 
 pub fn walk_function<T: Visitor>(visitor: &mut T, function: &mut ASTNode<Function>) {
     match &mut function.node {
-        Function::Function(_, block_items) => {
+        Function::Function(_, block) => {
+            block.accept(visitor)
+        }
+    }
+}
+
+pub fn walk_block<T: Visitor>(visitor: &mut T, block: &mut ASTNode<Block>) { 
+    match &mut block.node {
+        Block::Block(block_items) => {
             for block_item in block_items {
                 block_item.accept(visitor);
             }
         }
     }
+
 }
+
 
 pub fn walk_block_item<T: Visitor>(visitor: &mut T, block_item: &mut ASTNode<BlockItem>) {
     match &mut block_item.node {
@@ -92,6 +116,36 @@ pub fn walk_statement<T: Visitor>(visitor: &mut T, statement: &mut ASTNode<State
         Statement::Null => {}
         Statement::Label(_, stmt) => stmt.accept(visitor),
         Statement::Goto(_) => {}
+        Statement::Compound(block) => block.accept(visitor),
+        Statement::While(condition, stmt, _) => {
+            condition.accept(visitor);
+            stmt.accept(visitor);
+        }
+        Statement::DoWhile(stmt, condition, _) => {
+            stmt.accept(visitor);
+            condition.accept(visitor);
+        }
+        Statement::For(initializer, condition, post, stmt, _) => {
+            initializer.accept(visitor);
+            if let Some(condition) = condition {
+                condition.accept(visitor);
+            }
+            if let Some(post) = post {
+                post.accept(visitor);
+            }
+            stmt.accept(visitor);
+        }
+        Statement::Break(_) => {}
+        Statement::Continue(_) => {}
+        Statement::Switch(expr, stmt, _) => {
+            expr.accept(visitor);
+            stmt.accept(visitor);
+        }
+        Statement::Case(expr, stmt, _) => {
+            expr.accept(visitor);
+            stmt.accept(visitor);
+        }
+        Statement::Default(expr, _) => expr.accept(visitor),
     }
 }
 
@@ -113,6 +167,17 @@ pub fn walk_expression<T: Visitor>(visitor: &mut T, expression: &mut ASTNode<Exp
         }
         Expression::IntLiteral(_) => {}
         Expression::Variable(_) => {}
+    }
+}
+
+pub fn walk_initializer<T: Visitor>(visitor: &mut T, initializer: &mut ASTNode<Initializer>) {
+    match &mut initializer.node {
+        Initializer::Decl(decl) => decl.accept(visitor),
+        Initializer::Exp(expr) => {
+            if let Some(expr) = expr {
+                expr.accept(visitor);
+            }
+        }
     }
 }
 
@@ -147,6 +212,12 @@ impl VisitableNode for Function {
     }
 }
 
+impl VisitableNode for Block {
+    fn accept<V: Visitor>(node: &mut ASTNode<Self>, visitor: &mut V) {
+        visitor.visit_block(node);
+    }
+}
+
 impl VisitableNode for BlockItem {
     fn accept<V: Visitor>(node: &mut ASTNode<Self>, visitor: &mut V) {
         visitor.visit_block_item(node);
@@ -171,9 +242,16 @@ impl VisitableNode for Expression {
     }
 }
 
-pub fn semantic_error<T>(node: &ASTNode<T>, kind: SemanticErrorKind) -> Option<CompilerError> {
+impl VisitableNode for Initializer {
+    fn accept<V: Visitor>(node: &mut ASTNode<Self>, visitor: &mut V) {
+        visitor.visit_initializer(node);
+    }
+}
+
+
+pub fn semantic_error(loc: Span, kind: SemanticErrorKind) -> Option<CompilerError> {
     Some(CompilerError::SemanticError {
-        location: node.span.into(),
+        location: loc.into(),
         kind
     })
 }

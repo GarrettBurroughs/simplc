@@ -33,7 +33,7 @@ impl Visitor for LabelResolver {
         match &statement.node {
             Statement::Label(label, _) => {
                 if self.label_set.contains(label) {
-                    self.error = semantic_error(statement, AlreadyDeclaredLabel(label.clone()));
+                    self.error = semantic_error(statement.span, AlreadyDeclaredLabel(label.clone()));
                 }
                 trace!("Found label: {}", label);
                 self.label_set.insert(label.to_string());
@@ -67,7 +67,7 @@ impl Visitor for GotoResolver {
         match &statement.node {
             Statement::Goto(label) => {
                 if !self.label_set.contains(label) {
-                    self.error = semantic_error(statement, UndeclaredLabel(label.clone()));
+                    self.error = semantic_error(statement.span, UndeclaredLabel(label.clone()));
                 }
             }
             _ => {}

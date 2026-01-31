@@ -10,7 +10,6 @@ impl<'a> SourceASTVisualizer<'a> {
     }
 
     pub fn visualize(&self, program: &ASTNode<Program>) -> String {
-        println!("AST Visualization:");
         self.visit_program(program)
     }
 
@@ -24,8 +23,16 @@ impl<'a> SourceASTVisualizer<'a> {
 
     fn visit_function(&self, function: &ASTNode<Function>) -> String {
         let source = &self.source_file.contents[function.span.start..function.span.end];
-        let Function::Function(name, block_items) = &function.node;
+        let Function::Function(name, block) = &function.node;
         let mut output = format!("Function({}): \n'{}'\n", name, source);
+        output.push_str(&self.visit_block(block));
+        output
+    }
+
+    fn visit_block(&self, block: &ASTNode<Block>) -> String {
+        let source = &self.source_file.contents[block.span.start..block.span.end];
+        let Block::Block(block_items) = &block.node;
+        let mut output = format!("Block: \n'{}'\n", source);
         for block_item in block_items {
             output.push_str(&self.visit_block_item(block_item));
         }
@@ -77,8 +84,55 @@ impl<'a> SourceASTVisualizer<'a> {
             }
             Statement::Null => {
             }
+            Statement::Compound(block) => output.push_str(&self.visit_block(block)),
+            Statement::While(cond, stmt, _) => {
+                output.push_str(&self.visit_expression(cond));
+                output.push_str(&self.visit_statement(stmt));
+            }
+            Statement::DoWhile(stmt, cond, _) => {
+                output.push_str(&self.visit_statement(stmt));
+                output.push_str(&self.visit_expression(cond));
+            }
+            Statement::For(initializer, cond, post, stmt, _) => {
+                output.push_str(&self.visit_initializer(initializer));
+                if let Some(cond) = cond {
+                    output.push_str(&self.visit_expression(cond));
+                }
+                if let Some(post) = post {
+                    output.push_str(&self.visit_expression(post));
+                }
+                output.push_str(&self.visit_statement(stmt));
+    
+            }
+            Statement::Break(_) => {}
+            Statement::Continue(_) => {}
+            Statement::Switch(expr, stmt, _) => {
+                output.push_str(&self.visit_expression(expr));
+                output.push_str(&self.visit_statement(stmt));
+            }
+            Statement::Case(expr, stmt, _) => {
+                output.push_str(&self.visit_expression(expr));
+                output.push_str(&self.visit_statement(stmt));
+            }
+            Statement::Default(stmt, _) => {
+                output.push_str(&self.visit_statement(stmt));
+            }
         };
         output
+    }
+
+    fn visit_initializer(&self, initializer: &ASTNode<Initializer>) -> String {
+        match &initializer.node {
+            Initializer::Decl(decl) => self.visit_declaration(decl),
+            Initializer::Exp(expr) => {
+                if let Some(expr) = expr {
+                    self.visit_expression(expr)
+                } else {
+                    String::new()
+                }
+            }
+        }
+
     }
 
     fn visit_expression(&self, expression: &ASTNode<Expression>) -> String {

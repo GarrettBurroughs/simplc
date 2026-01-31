@@ -54,11 +54,11 @@ impl SourceFile {
         Location { row, column }
     }
 
-    pub fn display(&self, pos: usize) -> String {
-        let loc = self.lookup(pos);
-        format!("{}:{loc}", self.file_path)
+    // pub fn display(&self, pos: usize) -> String {
+    //     let loc = self.lookup(pos);
+    //     format!("{}:{loc}", self.file_path)
 
-    }
+    // }
 }
 
 impl Span {

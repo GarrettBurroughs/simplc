@@ -1,5 +1,8 @@
 use crate::{
-    frontend::ast::{ASTNode, BlockItem, Declaration, Expression, Function, Program, Statement},
+    frontend::ast::{
+        ASTNode, Block, BlockItem, Declaration, Expression, Function, Initializer, Program,
+        Statement,
+    },
     sourcemap::SourceFile,
 };
 
@@ -32,20 +35,30 @@ impl<'a> ASTVisualizer<'a> {
             Program::Program(func) => format!(
                 "Program {}\n{}",
                 self.format_loc(program),
-                self.visit_function(func, 0)
+                self.visit_function(func, 1)
             ),
         }
     }
 
     fn visit_function(&self, function: &ASTNode<Function>, level: usize) -> String {
         match &function.node {
-            Function::Function(name, block_items) => {
+            Function::Function(name, block) => {
                 let mut output = format!(
                     "{}Function \"{}\" {}\n",
                     indent(level),
                     name,
                     self.format_loc(function)
                 );
+                output.push_str(&self.visit_block(block, level + 1));
+                output
+            }
+        }
+    }
+
+    fn visit_block(&self, block: &ASTNode<Block>, level: usize) -> String {
+        match &block.node {
+            Block::Block(block_items) => {
+                let mut output = format!("{}Block {}\n", indent(level), self.format_loc(block));
                 for block_item in block_items {
                     output.push_str(&self.visit_block_item(block_item, level + 1));
                 }
@@ -54,8 +67,8 @@ impl<'a> ASTVisualizer<'a> {
         }
     }
 
-    fn visit_block_item(&self, block: &ASTNode<BlockItem>, level: usize) -> String {
-        match &block.node {
+    fn visit_block_item(&self, block_item: &ASTNode<BlockItem>, level: usize) -> String {
+        match &block_item.node {
             BlockItem::Statement(stmt) => self.visit_statement(stmt, level),
             BlockItem::Declaration(decl) => self.visit_declaration(decl, level),
         }
@@ -125,6 +138,101 @@ impl<'a> ASTVisualizer<'a> {
                 out
             }
             Statement::Null => format!("{}NullStmt {}\n", i, loc),
+            Statement::Compound(block) => format!("{}", self.visit_block(block, level)),
+            Statement::While(condition, stmt, label) => format!(
+                "{}While#{} {}\n{}{}",
+                indent(level),
+                label.clone().unwrap_or_default(),
+                loc,
+                self.visit_expression(condition, level + 1),
+                self.visit_statement(stmt, level + 1)
+            ),
+            Statement::DoWhile(stmt, condition, label) => format!(
+                "{}DoWhile#{} {}\n{}{}",
+                indent(level),
+                label.clone().unwrap_or_default(),
+                loc,
+                self.visit_statement(stmt, level + 1),
+                self.visit_expression(condition, level + 1)
+            ),
+            Statement::For(initializer, condition, post, stmt, label) => {
+                let mut output = format!(
+                    "{}For#{} {}\n",
+                    indent(level),
+                    label.clone().unwrap_or_default(),
+                    loc
+                );
+                output.push_str(&format!(
+                    "{}",
+                    self.visit_initializer(initializer, level + 1)
+                ));
+                if let Some(condition) = condition {
+                    output.push_str(&format!("{}", self.visit_expression(condition, level + 1)));
+                }
+                if let Some(post) = post {
+                    output.push_str(&format!("{}", self.visit_expression(post, level + 1)));
+                }
+                output.push_str(&format!("{}", self.visit_statement(stmt, level + 1)));
+                output
+            }
+            Statement::Break(label) => {
+                format!(
+                    "{}Break#{} {}\n",
+                    indent(level),
+                    label.clone().unwrap_or_default(),
+                    loc
+                )
+            }
+            Statement::Continue(label) => {
+                format!(
+                    "{}Continue#{} {}\n",
+                    indent(level),
+                    label.clone().unwrap_or_default(),
+                    loc
+                )
+            }
+            Statement::Switch(expr, stmt, label) => {
+                format!(
+                    "{}Switch#{} {}\n{}{}",
+                    indent(level),
+                    label.clone().unwrap_or_default(),
+                    loc,
+                    self.visit_expression(expr, level + 1),
+                    self.visit_statement(stmt, level + 1),
+                )
+            }
+            Statement::Case(expr, stmt, label) => {
+                format!(
+                    "{}Case#{} {}\n{}{}",
+                    indent(level),
+                    label.clone().unwrap_or_default(),
+                    loc,
+                    self.visit_expression(expr, level + 1),
+                    self.visit_statement(stmt, level + 1),
+                )
+            }
+            Statement::Default(stmt, label) => {
+                format!(
+                    "{}Default#{} {}\n{}",
+                    indent(level),
+                    label.clone().unwrap_or_default(),
+                    loc,
+                    self.visit_statement(stmt, level + 1)
+                )
+            }
+        }
+    }
+
+    fn visit_initializer(&self, initializer: &ASTNode<Initializer>, level: usize) -> String {
+        match &initializer.node {
+            Initializer::Decl(decl) => self.visit_declaration(decl, level),
+            Initializer::Exp(expr) => {
+                if let Some(expr) = expr {
+                    self.visit_expression(expr, level)
+                } else {
+                    String::new()
+                }
+            }
         }
     }
 

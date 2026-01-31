@@ -13,7 +13,7 @@ pub enum CompilerError {
         character: char,
     },
 
-    #[error("Semantic error: {kind}")]
+    #[error("Parse error: {kind}")]
     #[diagnostic(code(lex::parse_error))]
     ParseError {
         #[label("here")]
@@ -21,7 +21,7 @@ pub enum CompilerError {
         kind: ParseErrorKind,
     },
 
-    #[error("Parse Error: {kind}")]
+    #[error("Semantic Error: {kind}")]
     #[diagnostic(code(lex::semantic_error))]
     SemanticError {
         #[label("here")]
@@ -64,6 +64,18 @@ pub enum SemanticErrorKind {
 
     #[error("use of undeclared label: {0}")]
     UndeclaredLabel(String),
+
+    #[error("use of break outside of loop or switch statement")]
+    InvalidBreak,
+
+    #[error("use of continue out of loop")]
+    InvalidContinue,
+
+    #[error("use of case or default out of switch statement")]
+    InvalidCase,
+
+    #[error("use of duplicate case in switch statement")]
+    DuplicateCase,
 }
 
 #[derive(Error, Debug)]
