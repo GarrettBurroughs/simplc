@@ -41,11 +41,12 @@ pub enum Expression {
         Box<ASTNode<Expression>>,
         Box<ASTNode<Expression>>,
     ),
+    FunctionCall(String, Vec<ASTNode<Expression>>)
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum Function {
-    Function(String, ASTNode<Block>),
+pub enum FunctionDeclaration {
+    FunctionDeclaration(String, Vec<String>, Option<ASTNode<Block>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -55,7 +56,7 @@ pub enum Block {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Program {
-    Program(ASTNode<Function>),
+    Program(Vec<ASTNode<FunctionDeclaration>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -66,13 +67,19 @@ pub enum BlockItem {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Initializer {
-    Decl(ASTNode<Declaration>),
+    Decl(ASTNode<VariableDeclaration>),
     Exp(Option<ASTNode<Expression>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Declaration {
-    Declaration(String, Option<ASTNode<Expression>>),
+    FunctionDeclaration(ASTNode<FunctionDeclaration>),
+    VariableDeclaration(ASTNode<VariableDeclaration>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum VariableDeclaration {
+    VariableDeclaration(String, Option<ASTNode<Expression>>),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

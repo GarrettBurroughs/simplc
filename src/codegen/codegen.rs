@@ -9,7 +9,7 @@ use inkwell::{
     module::Module,
     support::LLVMString,
     targets::{CodeModel, FileType, InitializationConfig, RelocMode, Target, TargetMachine},
-    values::{BasicValueEnum, IntValue, PointerValue},
+    values::{BasicValueEnum, FunctionValue, IntValue, PointerValue},
 };
 
 use crate::semantic::switch_collection::Switch;
@@ -18,31 +18,37 @@ pub struct CodeGen<'ctx> {
     pub context: &'ctx Context,
     pub module: Module<'ctx>,
     pub builder: Builder<'ctx>,
-    pub variables: HashSet<String>,
+    pub variable_mappings: HashMap<String, HashSet<String>>,
     pub variable_map: HashMap<String, PointerValue<'ctx>>,
     pub label_map: HashMap<String, BasicBlock<'ctx>>,
     pub gen_l_value: bool,
     pub switch_statements: HashMap<String, Switch>,
     pub switch_map: HashMap<String, Vec<(IntValue<'ctx>, BasicBlock<'ctx>)>>,
+    pub functions: HashMap<String, FunctionValue<'ctx>>,
+    pub return_block: Option<BasicBlock<'ctx>>,
+    pub return_value: Option<PointerValue<'ctx>>,
 }
 
 impl<'ctx> CodeGen<'ctx> {
     pub fn new(
         context: &'ctx Context,
         program_name: &str,
-        variables: HashSet<String>,
+        variable_mappings: HashMap<String, HashSet<String>>,
         switch_statements: HashMap<String, Switch>,
     ) -> Self {
         CodeGen {
             context: context,
             module: context.create_module(program_name),
             builder: context.create_builder(),
-            variables,
+            variable_mappings,
             variable_map: HashMap::new(),
             label_map: HashMap::new(),
             switch_statements: switch_statements,
             switch_map: HashMap::new(),
+            functions: HashMap::new(),
             gen_l_value: false,
+            return_block: None,
+            return_value: None,
         }
     }
 

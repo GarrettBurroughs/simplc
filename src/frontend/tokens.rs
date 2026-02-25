@@ -69,6 +69,7 @@ pub enum Token {
     Not,               // !
     QuestionMark,      // ?
     Colon,             // :
+    Comma,             // ,
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -3,6 +3,7 @@ use thiserror::Error;
 
 use crate::frontend::tokens::Token;
 
+#[allow(unused)]
 #[derive(Error, Debug, Diagnostic)]
 pub enum CompilerError {
     #[error("Unexpected character: {character}")]
@@ -41,8 +42,8 @@ pub enum ParseErrorKind {
     #[error("Unexpected end of file")]
     EOF,
 
-    #[error("Unexpected end of file")]
-    InvalidEOF(Token),
+    // #[error("Unexpected end of file")]
+    // InvalidEOF(Token),
 
     #[error("Invalid Label")]
     InvalidLabel,
@@ -55,6 +56,9 @@ pub enum SemanticErrorKind {
 
     #[error("undeclared variable: {0}")]
     UndeclaredVariable(String),
+
+    #[error("attemptint to call undeclared function: {0}")]
+    UndeclaredFunction(String),
 
     #[error("invalid assignment")]
     InvalidAssignment,
@@ -76,6 +80,9 @@ pub enum SemanticErrorKind {
 
     #[error("use of duplicate case in switch statement")]
     DuplicateCase,
+
+
+
 }
 
 #[derive(Error, Debug)]

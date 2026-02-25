@@ -15,7 +15,10 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Statement> {
                 let exp = expression
                     .codegen(codegen)?
                     .expect("expression to have a value");
-                codegen.builder.build_return(Some(&exp))?;
+                codegen.builder.build_store(codegen.return_value.unwrap(), exp)?;
+                codegen.builder.build_unconditional_branch(codegen.return_block.unwrap())?;
+                let dead = codegen.get_basic_block("dead");
+                codegen.builder.position_at_end(dead);
             }
             Statement::Expression(expr) => {
                 expr.codegen(codegen)?;

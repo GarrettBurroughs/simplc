@@ -1,7 +1,7 @@
 use crate::{
     frontend::ast::{
-        ASTNode, Block, BlockItem, Declaration, Expression, Function, Initializer, Program,
-        Statement,
+        ASTNode, Block, BlockItem, Declaration, Expression, FunctionDeclaration, Initializer,
+        Program, Statement, VariableDeclaration,
     },
     sourcemap::SourceFile,
 };
@@ -32,24 +32,33 @@ impl<'a> ASTVisualizer<'a> {
 
     fn visit_program(&self, program: &ASTNode<Program>) -> String {
         match &program.node {
-            Program::Program(func) => format!(
-                "Program {}\n{}",
-                self.format_loc(program),
-                self.visit_function(func, 1)
-            ),
+            Program::Program(func_list) => {
+                let mut output = String::new();
+                for func in func_list {
+                    output.push_str(&format!(
+                        "Program {}\n{}",
+                        self.format_loc(program),
+                        self.visit_function(func, 1)
+                    ))
+                }
+                output
+            }
         }
     }
 
-    fn visit_function(&self, function: &ASTNode<Function>, level: usize) -> String {
+    fn visit_function(&self, function: &ASTNode<FunctionDeclaration>, level: usize) -> String {
         match &function.node {
-            Function::Function(name, block) => {
+            FunctionDeclaration::FunctionDeclaration(name, arguments, block) => {
                 let mut output = format!(
-                    "{}Function \"{}\" {}\n",
+                    "{}Function  \"{}({})\" {}\n",
                     indent(level),
                     name,
+                    arguments.join(","),
                     self.format_loc(function)
                 );
-                output.push_str(&self.visit_block(block, level + 1));
+                if let Some(block) = block {
+                    output.push_str(&self.visit_block(block, level + 1));
+                }
                 output
             }
         }
@@ -76,12 +85,25 @@ impl<'a> ASTVisualizer<'a> {
 
     fn visit_declaration(&self, declaration: &ASTNode<Declaration>, level: usize) -> String {
         match &declaration.node {
-            Declaration::Declaration(name, expr_opt) => {
+            Declaration::FunctionDeclaration(function) => self.visit_function(function, level + 1),
+            Declaration::VariableDeclaration(variable_declaration) => {
+                self.visit_variable_declaration(variable_declaration, level + 1)
+            }
+        }
+    }
+
+    fn visit_variable_declaration(
+        &self,
+        variable_declaration: &ASTNode<VariableDeclaration>,
+        level: usize,
+    ) -> String {
+        match &variable_declaration.node {
+            VariableDeclaration::VariableDeclaration(name, expr_opt) => {
                 let base = format!(
                     "{}Decl \"{}\" {}",
                     indent(level),
                     name,
-                    self.format_loc(declaration)
+                    self.format_loc(variable_declaration)
                 );
                 if let Some(expr) = expr_opt {
                     format!("{} = \n{}", base, self.visit_expression(expr, level + 1))
@@ -225,7 +247,7 @@ impl<'a> ASTVisualizer<'a> {
 
     fn visit_initializer(&self, initializer: &ASTNode<Initializer>, level: usize) -> String {
         match &initializer.node {
-            Initializer::Decl(decl) => self.visit_declaration(decl, level),
+            Initializer::Decl(decl) => self.visit_variable_declaration(decl, level),
             Initializer::Exp(expr) => {
                 if let Some(expr) = expr {
                     self.visit_expression(expr, level)
@@ -279,6 +301,13 @@ impl<'a> ASTVisualizer<'a> {
                     self.visit_expression(true_expr, level + 1),
                     self.visit_expression(false_expr, level + 1),
                 )
+            }
+            Expression::FunctionCall(name, args) => {
+                let mut output = format!("{} FnCall {} {}\n", i, name, loc);
+                for arg in args{
+                    output.push_str(&self.visit_expression(arg, level + 1));
+                }
+                output
             }
         }
     }

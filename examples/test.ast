@@ -1,17 +1,9 @@
 Program @ 1:1
-  Function "main" @ 1:1
+  Function  "main()" @ 1:1
     Block @ 1:16
-      Decl "x_0" @ 2:5 = 
-        Int(0) @ 2:13
-      Switch#switch_0 @ 3:5
-        Int(0) @ 3:13
-        Block @ 3:16
-          ExprStmt @ 4:9
-            Assign @ 4:9
-              Var("x_0") @ 4:9
-              BinaryOp(Plus) @ 4:9
-                Var("x_0") @ 4:9
-                Int(1) @ 4:14
+        Decl "foo_0" @ 2:5
+      Block @ 3:5
+          Function  "foo()" @ 4:9
       Return @ 6:5
         Int(0) @ 6:12
 

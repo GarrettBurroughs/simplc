@@ -234,6 +234,7 @@ impl<'a> Lexer<'a> {
             '~' => Token::BitwiseCompliment,
             '?' => Token::QuestionMark,
             ':' => Token::Colon,
+            ',' => Token::Comma,
             _ => return Err(self.err(c)),
         };
         return Ok(tok);

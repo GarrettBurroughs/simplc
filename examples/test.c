@@ -1,7 +1,7 @@
 int main(void) {
-    int x = 0;
-    switch (0) { 
-        x += 1;
+    int foo;
+    {
+        int foo();
     }
     return 0;
 }

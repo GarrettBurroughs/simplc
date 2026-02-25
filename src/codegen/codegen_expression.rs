@@ -1,7 +1,7 @@
 use inkwell::{
     IntPredicate,
     builder::BuilderError,
-    values::{BasicValue, BasicValueEnum, IntValue, PointerValue},
+    values::{BasicValue, BasicValueEnum, IntValue, PointerValue, ValueKind},
 };
 
 use crate::{
@@ -116,17 +116,27 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
 
                 let then_block = codegen.context.append_basic_block(current_fn, "then_block");
                 let else_block = codegen.context.append_basic_block(current_fn, "else_block");
-                let merge_block = codegen.context.append_basic_block(current_fn, "merge_block");
+                let merge_block = codegen
+                    .context
+                    .append_basic_block(current_fn, "merge_block");
 
-                codegen.builder.build_conditional_branch(cmp, then_block, else_block)?;
+                codegen
+                    .builder
+                    .build_conditional_branch(cmp, then_block, else_block)?;
 
                 codegen.builder.position_at_end(then_block);
-                let val1 = expr1.codegen(codegen)?.expect("expected lhs of ternary to have a value").into_int_value();
+                let val1 = expr1
+                    .codegen(codegen)?
+                    .expect("expected lhs of ternary to have a value")
+                    .into_int_value();
                 let then_end_block = codegen.builder.get_insert_block().unwrap();
                 codegen.builder.build_unconditional_branch(merge_block)?;
 
                 codegen.builder.position_at_end(else_block);
-                let val2 = expr2.codegen(codegen)?.expect("expected rhs of ternary to have a value").into_int_value();
+                let val2 = expr2
+                    .codegen(codegen)?
+                    .expect("expected rhs of ternary to have a value")
+                    .into_int_value();
                 let else_end_block = codegen.builder.get_insert_block().unwrap();
                 codegen.builder.build_unconditional_branch(merge_block)?;
 
@@ -134,6 +144,20 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
                 let phi = codegen.builder.build_phi(val1.get_type(), "ternary_phi")?;
                 phi.add_incoming(&[(&val1, then_end_block), (&val2, else_end_block)]);
                 Ok(Some(phi.as_basic_value().as_basic_value_enum()))
+            }
+            Expression::FunctionCall(name, args) => {
+                let function = codegen.functions.get(name).unwrap().clone();
+                let mut arguments = Vec::new();
+                for a in args {
+                    arguments.push(a.codegen(codegen)?.unwrap().into());
+                }
+                let csv = codegen.builder.build_call(function, &arguments, name)?;
+                match csv.try_as_basic_value() {
+                    ValueKind::Basic(basic_value_enum) => {
+                        Ok(Some(basic_value_enum))
+                    }
+                    ValueKind::Instruction(_) => Ok(None),
+                }
             }
         }
     }

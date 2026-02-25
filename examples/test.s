@@ -6,9 +6,8 @@
 main:
 	.cfi_startproc
 	movq	$0, -8(%rsp)
-	jmp	.LBB0_2
-.LBB0_2:
-	xorl	%eax, %eax
+	movq	$0, -8(%rsp)
+	movq	-8(%rsp), %rax
 	retq
 .Lfunc_end0:
 	.size	main, .Lfunc_end0-main

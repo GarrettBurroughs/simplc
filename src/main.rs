@@ -13,7 +13,6 @@ use miette::NamedSource;
 use crate::{
     codegen::codegen::CodeGen, error::CompilerError, frontend::{
         ast_visualizer::ASTVisualizer, lexer::Lexer, parser::Parser,
-        source_ast_visualizer::SourceASTVisualizer,
     }, semantic::{label_resolution::resolve_labels, loop_labeling::label_loops, switch_collection::collect_switch, variable_resolution::resolve_variables}, sourcemap::SourceFile
 };
 
@@ -52,10 +51,6 @@ struct Args {
     /// Output AST
     #[arg(long)]
     ast: bool,
-
-    /// Output AST with source
-    #[arg(long)]
-    source_ast: bool,
 
     /// Debug level
     #[arg(long)]
@@ -150,14 +145,6 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
         writeln!(file, "{}", ast_viz).map_err(|_| write_error(&path))?;
     }
 
-    let source_visualizer = SourceASTVisualizer::new(&source_file);
-    let source_viz = source_visualizer.visualize(&program);
-    debug!("Source Visualizer:\n {}", source_viz);
-    if args.source_ast {
-        let path = format!("{}.srcmp", output_name);
-        let mut file = File::create(&path).map_err(|_| write_error(&path))?;
-        writeln!(file, "{}", source_viz).map_err(|_| write_error(&path))?;
-    }
 
     // Code Generation
     info!("Running code generation for {}", output_name);
