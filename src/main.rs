@@ -11,9 +11,14 @@ use log::{debug, info};
 use miette::NamedSource;
 
 use crate::{
-    codegen::codegen::CodeGen, error::CompilerError, frontend::{
-        ast_visualizer::ASTVisualizer, lexer::Lexer, parser::Parser,
-    }, semantic::{label_resolution::resolve_labels, loop_labeling::label_loops, switch_collection::collect_switch, variable_resolution::resolve_variables}, sourcemap::SourceFile
+    codegen::codegen::CodeGen,
+    error::CompilerError,
+    frontend::{ast_visualizer::ASTVisualizer, lexer::Lexer, parser::Parser},
+    semantic::{
+        label_resolution::resolve_labels, loop_labeling::label_loops,
+        switch_collection::collect_switch, variable_resolution::resolve_variables,
+    },
+    sourcemap::SourceFile,
 };
 
 mod codegen;
@@ -134,7 +139,6 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
     let switch_statements = collect_switch(&mut program)?;
     debug!("switch statements {:?}", switch_statements);
 
-
     let ast_visualizer = ASTVisualizer::new(&source_file);
     let ast_viz = ast_visualizer.visualize(&program);
     debug!("AST: \n{}", ast_viz);
@@ -144,7 +148,6 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
         let mut file = File::create(&path).map_err(|_| write_error(&path))?;
         writeln!(file, "{}", ast_viz).map_err(|_| write_error(&path))?;
     }
-
 
     // Code Generation
     info!("Running code generation for {}", output_name);

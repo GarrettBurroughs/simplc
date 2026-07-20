@@ -153,9 +153,7 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
                 }
                 let csv = codegen.builder.build_call(function, &arguments, name)?;
                 match csv.try_as_basic_value() {
-                    ValueKind::Basic(basic_value_enum) => {
-                        Ok(Some(basic_value_enum))
-                    }
+                    ValueKind::Basic(basic_value_enum) => Ok(Some(basic_value_enum)),
                     ValueKind::Instruction(_) => Ok(None),
                 }
             }

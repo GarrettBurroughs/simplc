@@ -44,7 +44,6 @@ pub enum ParseErrorKind {
 
     // #[error("Unexpected end of file")]
     // InvalidEOF(Token),
-
     #[error("Invalid Label")]
     InvalidLabel,
 }
@@ -80,9 +79,6 @@ pub enum SemanticErrorKind {
 
     #[error("use of duplicate case in switch statement")]
     DuplicateCase,
-
-
-
 }
 
 #[derive(Error, Debug)]

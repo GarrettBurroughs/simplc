@@ -1,6 +1,9 @@
 use inkwell::{builder::BuilderError, values::BasicValueEnum};
 
-use crate::{codegen::codegen::{CodeGen, CodeGenerator}, frontend::ast::{ASTNode, Block}};
+use crate::{
+    codegen::codegen::{CodeGen, CodeGenerator},
+    frontend::ast::{ASTNode, Block},
+};
 
 impl<'ctx> CodeGenerator<'ctx> for ASTNode<Block> {
     fn codegen(

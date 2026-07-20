@@ -304,7 +304,7 @@ impl<'a> ASTVisualizer<'a> {
             }
             Expression::FunctionCall(name, args) => {
                 let mut output = format!("{} FnCall {} {}\n", i, name, loc);
-                for arg in args{
+                for arg in args {
                     output.push_str(&self.visit_expression(arg, level + 1));
                 }
                 output

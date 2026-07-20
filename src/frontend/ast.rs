@@ -41,7 +41,7 @@ pub enum Expression {
         Box<ASTNode<Expression>>,
         Box<ASTNode<Expression>>,
     ),
-    FunctionCall(String, Vec<ASTNode<Expression>>)
+    FunctionCall(String, Vec<ASTNode<Expression>>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -111,7 +111,7 @@ impl Expression {
                 match op {
                     Token::Plus => lhs + rhs,
                     Token::Minus => lhs - rhs,
-                    Token::Div => lhs / rhs, 
+                    Token::Div => lhs / rhs,
                     Token::Mul => lhs * rhs,
                     Token::Percent => lhs % rhs,
                     Token::LogicalAnd => (lhs != 0 && rhs != 0) as i32,
@@ -127,11 +127,10 @@ impl Expression {
                     Token::GreaterThanEq => (lhs >= rhs) as i32,
                     Token::LessThan => (lhs < rhs) as i32,
                     Token::LessThanEq => (lhs <= rhs) as i32,
-                    _ => panic!("Invalid const expr")
-
+                    _ => panic!("Invalid const expr"),
                 }
             }
-            _ => panic!("Invalid const expr")
+            _ => panic!("Invalid const expr"),
         }
     }
 }

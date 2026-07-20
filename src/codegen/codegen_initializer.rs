@@ -1,7 +1,9 @@
-
 use inkwell::{builder::BuilderError, values::BasicValueEnum};
 
-use crate::{codegen::codegen::{CodeGen, CodeGenerator}, frontend::ast::{ASTNode, Initializer}};
+use crate::{
+    codegen::codegen::{CodeGen, CodeGenerator},
+    frontend::ast::{ASTNode, Initializer},
+};
 
 impl<'ctx> CodeGenerator<'ctx> for ASTNode<Initializer> {
     fn codegen(
@@ -11,8 +13,8 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Initializer> {
         match &self.node {
             Initializer::Decl(decl) => {
                 decl.codegen(codegen)?;
-            },
-            Initializer::Exp(expr) =>  {
+            }
+            Initializer::Exp(expr) => {
                 if let Some(expr) = expr {
                     expr.codegen(codegen)?;
                 }

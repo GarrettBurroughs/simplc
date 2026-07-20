@@ -50,7 +50,9 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<FunctionDeclaration> {
                         .builder
                         .build_alloca(i64_type, &format!("{}_return", name))?,
                 );
-                codegen.builder.build_store(codegen.return_value.unwrap(), i64_type.const_zero())?;
+                codegen
+                    .builder
+                    .build_store(codegen.return_value.unwrap(), i64_type.const_zero())?;
 
                 // Initialize/Allocate all function variables
                 for v in &codegen.variable_mappings[name] {

@@ -11,7 +11,8 @@ use crate::{
         ast::*,
         tokens::Token,
         visitor::{
-            AstVisitable, Visitor, semantic_error, walk_block, walk_expression, walk_function_declaration, walk_program, walk_statement, walk_variable_declaration
+            AstVisitable, Visitor, semantic_error, walk_block, walk_expression,
+            walk_function_declaration, walk_program, walk_statement, walk_variable_declaration,
         },
     },
 };
@@ -19,7 +20,7 @@ use crate::{
 #[derive(Debug, Clone)]
 enum Linkage {
     External,
-    None
+    None,
 }
 
 pub struct VariableResolver {
@@ -90,12 +91,11 @@ impl Visitor for VariableResolver {
         let FunctionDeclaration::FunctionDeclaration(name, arguments, body) = &mut function.node;
         if let Some(ident) = self.defined_in_scope(name) {
             if let Linkage::None = ident.1 {
-                    self.error = semantic_error(
-                        function.span,
-                        SemanticErrorKind::MultipleVariableDefinition(name.clone()),
-                    );
+                self.error = semantic_error(
+                    function.span,
+                    SemanticErrorKind::MultipleVariableDefinition(name.clone()),
+                );
             }
-
         }
         self.scopes
             .last_mut()
@@ -204,8 +204,10 @@ impl Visitor for VariableResolver {
                 if let Some(unique_name) = self.is_in_scope(name) {
                     *name = unique_name.0
                 } else {
-                    self.error =
-                        semantic_error(expression.span, SemanticErrorKind::UndeclaredFunction(name.clone()))
+                    self.error = semantic_error(
+                        expression.span,
+                        SemanticErrorKind::UndeclaredFunction(name.clone()),
+                    )
                 }
             }
             _ => {}

@@ -3,24 +3,23 @@ use std::fmt::Display;
 use log::trace;
 use miette::SourceSpan;
 
-
 // A span represents a span of text
 // The start is inclusive and the end is exclusive [start, end)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
-    pub start: usize, 
+    pub start: usize,
     pub end: usize,
 }
 
 pub struct SourceFile {
     pub file_path: String,
-    pub contents: String, 
+    pub contents: String,
     line_starts: Vec<usize>,
 }
 
 pub struct Location {
-    pub row: usize, 
-    pub column: usize, 
+    pub row: usize,
+    pub column: usize,
 }
 
 impl From<Span> for SourceSpan {
@@ -38,13 +37,15 @@ impl SourceFile {
                 line_starts.push(i + 1);
             }
         }
-        SourceFile { file_path: file_path.to_string(), contents, line_starts }
-
+        SourceFile {
+            file_path: file_path.to_string(),
+            contents,
+            line_starts,
+        }
     }
 
-    // Get a location (row, col) based on the byte position 
+    // Get a location (row, col) based on the byte position
     pub fn lookup(&self, pos: usize) -> Location {
-
         let row = match self.line_starts.binary_search(&pos) {
             Ok(idx) => idx,
             Err(idx) => idx - 1,
@@ -64,11 +65,10 @@ impl SourceFile {
 impl Span {
     pub fn merge(&self, other: &Span) -> Self {
         Self {
-            start: self.start, 
-            end: other.end
+            start: self.start,
+            end: other.end,
         }
     }
-
 }
 
 impl Display for Span {

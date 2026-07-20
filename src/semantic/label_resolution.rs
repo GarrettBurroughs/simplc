@@ -9,7 +9,9 @@ use crate::{
     },
     frontend::{
         ast::{ASTNode, FunctionDeclaration, Program, Statement},
-        visitor::{AstVisitable, Visitor, semantic_error, walk_function_declaration, walk_statement},
+        visitor::{
+            AstVisitable, Visitor, semantic_error, walk_function_declaration, walk_statement,
+        },
     },
 };
 
@@ -30,7 +32,6 @@ impl LabelResolver {
 }
 
 impl Visitor for LabelResolver {
-
     fn visit_function_declaration(&mut self, function: &mut ASTNode<FunctionDeclaration>) {
         if self.error.is_some() {
             return;
@@ -64,7 +65,6 @@ impl Visitor for LabelResolver {
         }
         walk_statement(self, statement);
     }
-
 }
 
 pub struct GotoResolver {

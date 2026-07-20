@@ -16,7 +16,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install LLVM
+      id: install-llvm
+      uses: ZhongRuoyu/setup-llvm@v0
+      with:
+        llvm-version: 18
     - name: Build
+      env:
+        LLVM_SYS_181_PREFIX: ${{ steps.install-llvm.outputs.llvm-path }}
       run: cargo build --verbose
     - name: Run tests
+      env:
+        LLVM_SYS_181_PREFIX: ${{ steps.install-llvm.outputs.llvm-path }}
       run: cargo test --verbose
