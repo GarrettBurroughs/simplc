@@ -1,55 +1,9 @@
-ASTNode {
-    node: Program(
-        ASTNode {
-            node: Function(
-                "main",
-                [
-                    ASTNode {
-                        node: Statement(
-                            ASTNode {
-                                node: Return(
-                                    ASTNode {
-                                        node: BinaryExpr(
-                                            Minus,
-                                            ASTNode {
-                                                node: IntLiteral(
-                                                    2,
-                                                ),
-                                                row: 4,
-                                                column: 11,
-                                            },
-                                            ASTNode {
-                                                node: UnaryExpr(
-                                                    Minus,
-                                                    ASTNode {
-                                                        node: IntLiteral(
-                                                            1,
-                                                        ),
-                                                        row: 4,
-                                                        column: 15,
-                                                    },
-                                                ),
-                                                row: 4,
-                                                column: 14,
-                                            },
-                                        ),
-                                        row: 4,
-                                        column: 12,
-                                    },
-                                ),
-                                row: 4,
-                                column: 4,
-                            },
-                        ),
-                        row: 4,
-                        column: 4,
-                    },
-                ],
-            ),
-            row: 3,
-            column: 4,
-        },
-    ),
-    row: 3,
-    column: 0,
-}
+Program @ 1:1
+  Function  "main()" @ 1:1
+    Block @ 1:16
+      Return @ 2:5
+        BinaryOp(Minus) @ 2:12
+          Int(2) @ 2:12
+          UnaryOp(Minus) @ 2:15
+            Int(1) @ 2:16
+

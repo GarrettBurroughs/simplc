@@ -5,9 +5,9 @@
 	.type	main,@function
 main:
 	.cfi_startproc
-	movl	$3, %eax
-	retq
-	xorl	%eax, %eax
+	movq	$0, -8(%rsp)
+	movq	$3, -8(%rsp)
+	movq	-8(%rsp), %rax
 	retq
 .Lfunc_end0:
 	.size	main, .Lfunc_end0-main
