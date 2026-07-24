@@ -48,12 +48,9 @@ fn generate_test(path: &Path, out: &mut String) -> io::Result<()> {
     let path_str = path.display().to_string().replace("\\", "/");
     let ignore = path.iter().nth(2).is_some_and(|n| {
         n.to_str()
-            .unwrap()
-            .strip_prefix("chapter_")
-            .unwrap()
-            .parse::<u8>()
-            .unwrap()
-            > MAX_CHAPTER
+            .and_then(|s| s.strip_prefix("chapter_"))
+            .and_then(|s| s.parse::<u8>().ok())
+            .is_some_and(|ch| ch > MAX_CHAPTER)
     });
     let ignore_str = if ignore { "\n#[ignore]" } else { "" };
     let fun = &format!(
