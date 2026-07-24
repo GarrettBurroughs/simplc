@@ -1,0 +1,12 @@
+// test-directive valid
+// test-directive return_code: 3
+
+int main(void) {
+    int f(void);
+    int f(void);
+    return f();
+}
+
+int f(void) {
+    return 3;
+}
