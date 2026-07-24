@@ -4,7 +4,7 @@ use std::{
 };
 
 const TEST_DIR: &str = "tests/chapter_tests";
-const MAX_CHAPTER: u8 = 8;
+const MAX_CHAPTER: u8 = 9;
 fn main() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = PathBuf::from(out_dir).join("generated_tests.rs");

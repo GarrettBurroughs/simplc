@@ -423,13 +423,16 @@ impl Parser {
             _ => loop {
                 if let Token::TypeInt = self.peek()?.token {
                     self.get_token()?;
-                    if let Token::Identifier(arg) = self.get_token()?.token {
+                    if let Token::Identifier(arg) = self.expect(Token::Identifier(String::new()))?.token {
                         args.push(arg);
                         if let Token::CloseParen = self.peek()?.token {
                             break;
                         }
                         self.expect(Token::Comma)?;
-                    }
+                        if let Token::CloseParen = self.peek()?.token {
+                            self.err(ParseErrorKind::Expected { got: Token::Comma, expected: vec![Token::CloseParen] })?;
+                        }
+                    } 
                 } else {
                     break;
                 }
