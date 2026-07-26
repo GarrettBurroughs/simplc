@@ -24,7 +24,7 @@ mod tests {
             if force_clean {
                 let _ = fs::remove_dir_all(&self.tmp_out);
             }
-            let tmp_out: String = format!("./.tmp.build.{}.out", process::id());
+            let tmp_out: String = format!("./.tests/.tmp.build.{}.out", process::id());
             // Clear the test output directory if it is empty
             if fs::read_dir(&tmp_out).is_ok_and(|d| d.count() == 0) {
                 fs::remove_dir_all(&tmp_out).unwrap();
@@ -89,7 +89,7 @@ mod tests {
         let compiler = env!("CARGO_BIN_EXE_compiler");
 
         let tmp_out = format!(
-            "./.tmp.build.{}.out/{}/",
+            "./.tests/.tmp.build.{}.out/{}/",
             process::id(),
             test_file_path.replace("/", "_").replace("\\", "_").trim_end_matches(".c")
         );

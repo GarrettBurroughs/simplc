@@ -73,22 +73,27 @@ impl VariableResolver {
             .last_mut()
             .unwrap()
             .insert(name.clone(), (unique_name.clone(), Linkage::None));
+
         self.function_mappings
             .get_mut(&self.current_function)
             .unwrap()
             .insert(unique_name.clone());
+
         unique_name
     }
 }
 
 impl Visitor for VariableResolver {
+
     fn visit_program(&mut self, program: &mut ASTNode<Program>) {
         self.begin_scope();
         walk_program(self, program);
         self.end_scope();
     }
+
     fn visit_function_declaration(&mut self, function: &mut ASTNode<FunctionDeclaration>) {
         let FunctionDeclaration::FunctionDeclaration(name, arguments, body) = &mut function.node;
+
         if let Some(ident) = self.defined_in_scope(name) {
             if let Linkage::None = ident.1 {
                 self.error = semantic_error(
@@ -97,31 +102,31 @@ impl Visitor for VariableResolver {
                 );
             }
         }
+
         self.scopes
             .last_mut()
             .unwrap()
             .insert(name.clone(), (name.clone(), Linkage::External));
-        if body.is_some() {
-            trace!("Entering function: {}", name);
-            self.current_function = name.clone();
-            self.function_mappings.insert(name.clone(), HashSet::new());
-            self.begin_scope();
-            for arg in arguments {
-                if self.defined_in_scope(arg).is_some() {
-                    self.error = semantic_error(
-                        function.span,
-                        SemanticErrorKind::MultipleVariableDefinition(arg.clone()),
-                    );
-                } else {
-                    trace!("Found variable in function declaration: {}", arg);
-                    let unique_name = self.declare(arg.clone());
-                    *arg = unique_name;
-                }
-            }
 
-            walk_function_declaration(self, function);
-            self.end_scope();
+        trace!("Entering function: {}", name);
+        self.current_function = name.clone();
+        self.function_mappings.insert(name.clone(), HashSet::new());
+        self.begin_scope();
+        for arg in arguments {
+            if self.defined_in_scope(arg).is_some() {
+                self.error = semantic_error(
+                    function.span,
+                    SemanticErrorKind::MultipleVariableDefinition(arg.clone()),
+                );
+            } else {
+                trace!("Found variable in function declaration: {}", arg);
+                let unique_name = self.declare(arg.clone());
+                *arg = unique_name;
+            }
         }
+
+        walk_function_declaration(self, function);
+        self.end_scope();
     }
 
     fn visit_block(&mut self, block: &mut ASTNode<Block>) {
