@@ -1,7 +1,7 @@
 use inkwell::{builder::BuilderError, values::BasicValueEnum};
 
 use crate::{
-    codegen::codegen::{CodeGen, CodeGenerator},
+    codegen::{CodeGen, CodeGenerator},
     frontend::ast::{ASTNode, Initializer},
 };
 

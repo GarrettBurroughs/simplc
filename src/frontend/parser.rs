@@ -43,7 +43,7 @@ impl Parser {
             .peek()
             .map(|t| t.span)
             .unwrap_or(Span { start: 0, end: 0 });
-        Err(CompilerError::ParseError {
+        Err(CompilerError::Parse {
             location: location.into(),
             kind,
         })
@@ -84,9 +84,9 @@ impl Parser {
     }
 
     fn peek(&mut self) -> Result<&TokenLocation, CompilerError> {
-        let err = CompilerError::ParseError {
+        let err = CompilerError::Parse {
             location: Span { start: 0, end: 0 }.into(),
-            kind: ParseErrorKind::EOF,
+            kind: ParseErrorKind::Eof,
         };
         self.tokens.peek().ok_or(err)
     }
@@ -95,7 +95,7 @@ impl Parser {
         let tok = self
             .tokens
             .next()
-            .ok_or(self.err::<&TokenLocation>(ParseErrorKind::EOF).unwrap_err())?;
+            .ok_or(self.err::<&TokenLocation>(ParseErrorKind::Eof).unwrap_err())?;
         Ok(tok)
     }
 
@@ -113,7 +113,7 @@ impl Parser {
             loc = loc.merge(&function.span);
             fn_list.push(function);
         }
-        return loc.build(Program::Program(fn_list));
+        loc.build(Program::Program(fn_list))
     }
 
     pub fn parse_block(&mut self) -> Result<ASTNode<Block>, CompilerError> {
@@ -220,7 +220,7 @@ impl Parser {
                     let span = start.merge(&end.span);
                     span.build(Statement::Goto(label))
                 } else {
-                    return self.err(ParseErrorKind::InvalidLabel);
+                    self.err(ParseErrorKind::InvalidLabel)
                 }
             }
             Token::Do => {
@@ -420,23 +420,26 @@ impl Parser {
             Token::TypeVoid => {
                 self.get_token()?;
             }
-            _ => loop {
-                if let Token::TypeInt = self.peek()?.token {
+            _ => {
+                while let Token::TypeInt = self.peek()?.token {
                     self.get_token()?;
-                    if let Token::Identifier(arg) = self.expect(Token::Identifier(String::new()))?.token {
+                    if let Token::Identifier(arg) =
+                        self.expect(Token::Identifier(String::new()))?.token
+                    {
                         args.push(arg);
                         if let Token::CloseParen = self.peek()?.token {
                             break;
                         }
                         self.expect(Token::Comma)?;
                         if let Token::CloseParen = self.peek()?.token {
-                            self.err(ParseErrorKind::Expected { got: Token::Comma, expected: vec![Token::CloseParen] })?;
+                            self.err(ParseErrorKind::Expected {
+                                got: Token::Comma,
+                                expected: vec![Token::CloseParen],
+                            })?;
                         }
-                    } 
-                } else {
-                    break;
+                    }
                 }
-            },
+            }
         }
         self.expect(Token::CloseParen)?;
         if let Token::Semicolon = self.peek()?.token {
@@ -560,13 +563,12 @@ impl Parser {
 
         if let Ok(next) = self.peek()
             && let Ok(factor) = &factor
+            && (next.token == Token::Increment || next.token == Token::Decrement)
         {
-            if next.token == Token::Increment || next.token == Token::Decrement {
-                let start = self.peek()?.span;
-                let next = self.get_token()?;
-                let span = start.merge(&next.span);
-                return span.build(Expression::UnaryExpr(next.token, Box::new(factor.clone())));
-            }
+            let start = self.peek()?.span;
+            let next = self.get_token()?;
+            let span = start.merge(&next.span);
+            return span.build(Expression::UnaryExpr(next.token, Box::new(factor.clone())));
         }
         factor
     }

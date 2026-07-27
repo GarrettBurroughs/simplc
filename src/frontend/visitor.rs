@@ -85,9 +85,8 @@ pub fn walk_function_declaration<T: Visitor>(
     visitor: &mut T,
     function: &mut ASTNode<FunctionDeclaration>,
 ) {
-    match &mut function.node {
-        FunctionDeclaration::FunctionDeclaration(_, _, Some(block)) => block.accept(visitor),
-        _ => {}
+    if let FunctionDeclaration::FunctionDeclaration(_, _, Some(block)) = &mut function.node {
+        block.accept(visitor)
     }
 }
 
@@ -283,7 +282,7 @@ impl VisitableNode for Initializer {
 }
 
 pub fn semantic_error(loc: Span, kind: SemanticErrorKind) -> Option<CompilerError> {
-    Some(CompilerError::SemanticError {
+    Some(CompilerError::Semantic {
         location: loc.into(),
         kind,
     })

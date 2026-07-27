@@ -160,7 +160,7 @@ impl<'a> ASTVisualizer<'a> {
                 out
             }
             Statement::Null => format!("{}NullStmt {}\n", i, loc),
-            Statement::Compound(block) => format!("{}", self.visit_block(block, level)),
+            Statement::Compound(block) => self.visit_block(block, level),
             Statement::While(condition, stmt, label) => format!(
                 "{}While#{} {}\n{}{}",
                 indent(level),
@@ -184,17 +184,14 @@ impl<'a> ASTVisualizer<'a> {
                     label.clone().unwrap_or_default(),
                     loc
                 );
-                output.push_str(&format!(
-                    "{}",
-                    self.visit_initializer(initializer, level + 1)
-                ));
+                output.push_str(&self.visit_initializer(initializer, level + 1));
                 if let Some(condition) = condition {
-                    output.push_str(&format!("{}", self.visit_expression(condition, level + 1)));
+                    output.push_str(&self.visit_expression(condition, level + 1));
                 }
                 if let Some(post) = post {
-                    output.push_str(&format!("{}", self.visit_expression(post, level + 1)));
+                    output.push_str(&self.visit_expression(post, level + 1));
                 }
-                output.push_str(&format!("{}", self.visit_statement(stmt, level + 1)));
+                output.push_str(&self.visit_statement(stmt, level + 1));
                 output
             }
             Statement::Break(label) => {

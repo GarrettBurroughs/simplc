@@ -72,7 +72,7 @@ impl Visitor for LoopLabeler {
                 if let Some(l) = self.break_stack.last() {
                     *label = Some(l.clone())
                 } else {
-                    self.error = Some(CompilerError::SemanticError {
+                    self.error = Some(CompilerError::Semantic {
                         location: statement.span.into(),
                         kind: SemanticErrorKind::InvalidBreak,
                     })
@@ -83,7 +83,7 @@ impl Visitor for LoopLabeler {
                 if let Some(l) = self.switch_stack.last() {
                     *label = Some(l.clone())
                 } else {
-                    self.error = Some(CompilerError::SemanticError {
+                    self.error = Some(CompilerError::Semantic {
                         location: statement.span.into(),
                         kind: SemanticErrorKind::InvalidCase,
                     })
@@ -94,7 +94,7 @@ impl Visitor for LoopLabeler {
                 if let Some(l) = self.switch_stack.last() {
                     *label = Some(l.clone())
                 } else {
-                    self.error = Some(CompilerError::SemanticError {
+                    self.error = Some(CompilerError::Semantic {
                         location: statement.span.into(),
                         kind: SemanticErrorKind::InvalidCase,
                     })
@@ -105,7 +105,7 @@ impl Visitor for LoopLabeler {
                 if let Some(l) = self.continue_stack.last() {
                     *label = Some(l.clone())
                 } else {
-                    self.error = Some(CompilerError::SemanticError {
+                    self.error = Some(CompilerError::Semantic {
                         location: statement.span.into(),
                         kind: SemanticErrorKind::InvalidContinue,
                     })

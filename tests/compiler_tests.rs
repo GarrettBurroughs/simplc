@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use regex::Regex;
     use std::{
         collections::HashSet,
         fs::{self, File},
         path::{Path, PathBuf},
         process::{self, Command},
     };
-    use regex::Regex;
 
     struct TestConfig {
         valid: bool,
@@ -91,7 +91,10 @@ mod tests {
         let tmp_out = format!(
             "./.tests/.tmp.build.{}.out/{}/",
             process::id(),
-            test_file_path.replace("/", "_").replace("\\", "_").trim_end_matches(".c")
+            test_file_path
+                .replace("/", "_")
+                .replace("\\", "_")
+                .trim_end_matches(".c")
         );
 
         let _cleanup = Cleanup {
@@ -174,7 +177,8 @@ mod tests {
 
                     assert_eq!(inc_pp_status.code().unwrap(), 0);
 
-                    let inc_log_file = File::create(format!("{}debug_{}.log", tmp_out, inc_stem)).unwrap();
+                    let inc_log_file =
+                        File::create(format!("{}debug_{}.log", tmp_out, inc_stem)).unwrap();
                     let inc_compiler_status = Command::new(compiler)
                         .arg(&inc_preprocessed)
                         .arg("-l")

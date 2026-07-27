@@ -5,7 +5,7 @@ use inkwell::{
 };
 
 use crate::{
-    codegen::codegen::{CodeGen, CodeGenerator},
+    codegen::{CodeGen, CodeGenerator},
     frontend::{
         ast::{ASTNode, Expression},
         tokens::Token,
@@ -68,7 +68,7 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
                 Ok(Some(output))
             }
             Expression::Variable(name) => {
-                let pointer = codegen.variable_map.get(name).unwrap().clone();
+                let pointer = *codegen.variable_map.get(name).unwrap();
                 if codegen.gen_l_value {
                     return Ok(Some(pointer.as_basic_value_enum()));
                 }
@@ -146,7 +146,7 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Expression> {
                 Ok(Some(phi.as_basic_value().as_basic_value_enum()))
             }
             Expression::FunctionCall(name, args) => {
-                let function = codegen.functions.get(name).unwrap().clone();
+                let function = *codegen.functions.get(name).unwrap();
                 let mut arguments = Vec::new();
                 for a in args {
                     arguments.push(a.codegen(codegen)?.unwrap().into());
@@ -289,7 +289,7 @@ fn build_short_circuit<'ctx>(
     };
 
     phi.add_incoming(&[(&phi_value, start_block), (&r, current_rhs_block)]);
-    return Ok(phi.as_basic_value().as_basic_value_enum());
+    Ok(phi.as_basic_value().as_basic_value_enum())
 }
 
 fn build_int_int_binary_expr<'ctx>(

@@ -11,8 +11,8 @@ use crate::{
         ast::*,
         tokens::Token,
         visitor::{
-            AstVisitable, Visitor, semantic_error, walk_block, walk_expression,
-            walk_function_declaration, walk_program, walk_statement, walk_variable_declaration,
+            AstVisitable, Visitor, semantic_error, walk_block, walk_expression, walk_program,
+            walk_statement, walk_variable_declaration,
         },
     },
 };
@@ -62,7 +62,7 @@ impl VariableResolver {
     // Returns the variable, along with it's unique name if it is is in scope
     // Returns None if the variable is not in scope
     fn defined_in_scope(&self, name: &str) -> Option<&(String, Linkage)> {
-        return self.scopes.last().unwrap().get(name);
+        self.scopes.last().unwrap().get(name)
     }
 
     fn is_in_scope(&self, name: &str) -> Option<(String, Linkage)> {
@@ -95,7 +95,6 @@ impl VariableResolver {
 }
 
 impl Visitor for VariableResolver {
-
     fn visit_program(&mut self, program: &mut ASTNode<Program>) {
         self.begin_scope();
         walk_program(self, program);
@@ -105,15 +104,14 @@ impl Visitor for VariableResolver {
     fn visit_function_declaration(&mut self, function: &mut ASTNode<FunctionDeclaration>) {
         let FunctionDeclaration::FunctionDeclaration(name, arguments, body) = &mut function.node;
 
-
         // Function names cannot conflict with other names in scope if they don't have external linkage
-        if let Some(ident) = self.defined_in_scope(name) {
-            if let Linkage::None = ident.1 {
-                self.error = semantic_error(
-                    function.span,
-                    SemanticErrorKind::MultipleVariableDefinition(name.clone()),
-                );
-            }
+        if let Some(ident) = self.defined_in_scope(name)
+            && let Linkage::None = ident.1
+        {
+            self.error = semantic_error(
+                function.span,
+                SemanticErrorKind::MultipleVariableDefinition(name.clone()),
+            );
         }
 
         // Add the function to the current scope with external linkage
@@ -149,8 +147,8 @@ impl Visitor for VariableResolver {
             for arg in arguments {
                 if args.contains(arg) {
                     self.error = semantic_error(
-                        function.span, 
-                        SemanticErrorKind::MultipleVariableDefinition(arg.clone())
+                        function.span,
+                        SemanticErrorKind::MultipleVariableDefinition(arg.clone()),
                     )
                 }
                 args.insert(arg);
@@ -227,11 +225,11 @@ impl Visitor for VariableResolver {
                 }
             }
             Expression::UnaryExpr(tok, expression) => {
-                if *tok == Token::Increment || *tok == Token::Decrement {
-                    if !expression.node.is_assignable() {
-                        self.error =
-                            semantic_error(expression.span, SemanticErrorKind::InvalidAssignment)
-                    }
+                if (*tok == Token::Increment || *tok == Token::Decrement)
+                    && !expression.node.is_assignable()
+                {
+                    self.error =
+                        semantic_error(expression.span, SemanticErrorKind::InvalidAssignment)
                 }
             }
             Expression::FunctionCall(name, _) => {

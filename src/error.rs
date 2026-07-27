@@ -8,7 +8,7 @@ use crate::frontend::tokens::Token;
 pub enum CompilerError {
     #[error("Unexpected character: {character}")]
     #[diagnostic(code(lex::unsupported_char))]
-    LexError {
+    Lex {
         #[label("here")]
         location: SourceSpan,
         character: char,
@@ -16,7 +16,7 @@ pub enum CompilerError {
 
     #[error("Parse error: {kind}")]
     #[diagnostic(code(lex::parse_error))]
-    ParseError {
+    Parse {
         #[label("here")]
         location: SourceSpan,
         kind: ParseErrorKind,
@@ -24,7 +24,7 @@ pub enum CompilerError {
 
     #[error("Semantic Error: {kind}")]
     #[diagnostic(code(lex::semantic_error))]
-    SemanticError {
+    Semantic {
         #[label("here")]
         location: SourceSpan,
         kind: SemanticErrorKind,
@@ -32,7 +32,7 @@ pub enum CompilerError {
 
     #[error("System error: {kind}")]
     #[diagnostic(code(lex::system_error))]
-    SystemError { kind: SystemErrorKind },
+    System { kind: SystemErrorKind },
 }
 
 #[derive(Error, Debug)]
@@ -40,7 +40,7 @@ pub enum ParseErrorKind {
     #[error("Unexpected token {got} expected: {expected:?}")]
     Expected { got: Token, expected: Vec<Token> },
     #[error("Unexpected end of file")]
-    EOF,
+    Eof,
 
     // #[error("Unexpected end of file")]
     // InvalidEOF(Token),

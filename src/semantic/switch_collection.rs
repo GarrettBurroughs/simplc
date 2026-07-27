@@ -53,7 +53,7 @@ impl Visitor for SwitchCollector {
                     .get_mut(&label.clone().expect("case should be labeled"))
                     .expect("switch statement to exist");
                 if switch.existing_labels.contains(&new_label) {
-                    self.error = Some(CompilerError::SemanticError {
+                    self.error = Some(CompilerError::Semantic {
                         location: statement.span.into(),
                         kind: DuplicateCase,
                     })
@@ -74,7 +74,7 @@ impl Visitor for SwitchCollector {
                     .expect("switch statement to exist");
 
                 if switch.existing_labels.contains(&new_label) {
-                    self.error = Some(CompilerError::SemanticError {
+                    self.error = Some(CompilerError::Semantic {
                         location: statement.span.into(),
                         kind: DuplicateCase,
                     })

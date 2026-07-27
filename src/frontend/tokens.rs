@@ -88,52 +88,49 @@ impl Token {
         if self.is_compound_assignment() {
             return true;
         }
-        match self {
+        matches!(
+            self,
             Token::Plus
-            | Token::Minus
-            | Token::Div
-            | Token::Mul
-            | Token::Percent
-            | Token::BitwiseOr
-            | Token::BitwiseAnd
-            | Token::BitwiseXOR
-            | Token::LeftShift
-            | Token::RightShift
-            | Token::LogicalEq
-            | Token::NotEqual
-            | Token::LogicalAnd
-            | Token::LogicalOr
-            | Token::GreaterThan
-            | Token::LessThan
-            | Token::GreaterThanEq
-            | Token::LessThanEq
-            | Token::Equal
-            | Token::QuestionMark => true,
-            _ => false,
-        }
+                | Token::Minus
+                | Token::Div
+                | Token::Mul
+                | Token::Percent
+                | Token::BitwiseOr
+                | Token::BitwiseAnd
+                | Token::BitwiseXOR
+                | Token::LeftShift
+                | Token::RightShift
+                | Token::LogicalEq
+                | Token::NotEqual
+                | Token::LogicalAnd
+                | Token::LogicalOr
+                | Token::GreaterThan
+                | Token::LessThan
+                | Token::GreaterThanEq
+                | Token::LessThanEq
+                | Token::Equal
+                | Token::QuestionMark
+        )
     }
 
     pub fn is_compound_assignment(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Token::PlusAssign
-            | Token::MinusAssign
-            | Token::MulAssign
-            | Token::DivAssign
-            | Token::ModAssign
-            | Token::AndAssign
-            | Token::OrAssign
-            | Token::XorAssign
-            | Token::LeftShiftAssign
-            | Token::RightShiftAssign => true,
-            _ => false,
-        }
+                | Token::MinusAssign
+                | Token::MulAssign
+                | Token::DivAssign
+                | Token::ModAssign
+                | Token::AndAssign
+                | Token::OrAssign
+                | Token::XorAssign
+                | Token::LeftShiftAssign
+                | Token::RightShiftAssign
+        )
     }
 
     pub fn is_short_circuit(&self) -> bool {
-        match self {
-            Token::LogicalAnd | Token::LogicalOr => true,
-            _ => false,
-        }
+        matches!(self, Token::LogicalAnd | Token::LogicalOr)
     }
 }
 

@@ -18,7 +18,7 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     fn err(&self, c: char) -> CompilerError {
-        CompilerError::LexError {
+        CompilerError::Lex {
             location: Span {
                 start: self.position,
                 end: self.position + 1,
@@ -52,13 +52,13 @@ impl<'a> Lexer<'a> {
     }
 
     fn consume_if(&mut self, expected: char) -> bool {
-        if let Some(&c) = self.chars.peek() {
-            if c == expected {
-                self.next_char();
-                return true;
-            }
+        if let Some(&c) = self.chars.peek()
+            && c == expected
+        {
+            self.next_char();
+            return true;
         }
-        return false;
+        false
     }
 
     fn skip_whitespace(&mut self) {
@@ -112,10 +112,10 @@ impl<'a> Lexer<'a> {
                 if c.is_numeric() {
                     num_str.push(self.next_char().unwrap());
                 } else {
-                    if let Some(&n) = self.chars.peek() {
-                        if n.is_alphabetic() {
-                            return Err(self.err(n));
-                        }
+                    if let Some(&n) = self.chars.peek()
+                        && n.is_alphabetic()
+                    {
+                        return Err(self.err(n));
                     }
                     break;
                 }
@@ -238,7 +238,7 @@ impl<'a> Lexer<'a> {
             ',' => Token::Comma,
             _ => return Err(self.err(c)),
         };
-        return Ok(tok);
+        Ok(tok)
     }
 }
 
@@ -248,9 +248,7 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.skip_whitespace();
 
-        if let None = self.chars.peek() {
-            return None;
-        }
+        self.chars.peek()?;
 
         let start = self.position;
 

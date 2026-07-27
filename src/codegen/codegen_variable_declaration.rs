@@ -1,7 +1,7 @@
 use inkwell::{builder::BuilderError, values::BasicValueEnum};
 
 use crate::{
-    codegen::codegen::{CodeGen, CodeGenerator},
+    codegen::{CodeGen, CodeGenerator},
     frontend::ast::{ASTNode, VariableDeclaration},
 };
 
@@ -12,7 +12,7 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<VariableDeclaration> {
     ) -> Result<Option<BasicValueEnum<'ctx>>, BuilderError> {
         match &self.node {
             VariableDeclaration::VariableDeclaration(name, astnode) => {
-                let ptr = codegen.variable_map.get(name).unwrap().clone();
+                let ptr = *codegen.variable_map.get(name).unwrap();
 
                 // If it is a compound assignment, store the value
                 if let Some(node) = astnode {

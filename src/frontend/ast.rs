@@ -96,10 +96,7 @@ impl<T> ASTNode<T> {
 
 impl Expression {
     pub fn is_assignable(&self) -> bool {
-        match &self {
-            Expression::Variable(_) => true,
-            _ => false,
-        }
+        matches!(self, Expression::Variable(_))
     }
 
     pub fn evaluate_const(&self) -> i32 {

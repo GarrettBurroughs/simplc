@@ -11,7 +11,7 @@ use log::{debug, info};
 use miette::NamedSource;
 
 use crate::{
-    codegen::codegen::CodeGen,
+    codegen::CodeGen,
     error::CompilerError,
     frontend::{ast_visualizer::ASTVisualizer, lexer::Lexer, parser::Parser},
     semantic::{
@@ -101,7 +101,7 @@ fn main() {
 }
 
 fn write_error(file: &str) -> CompilerError {
-    CompilerError::SystemError {
+    CompilerError::System {
         kind: error::SystemErrorKind::FileWrite(file.to_string()),
     }
 }
@@ -109,7 +109,7 @@ fn write_error(file: &str) -> CompilerError {
 fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), CompilerError> {
     info!("Running Lexical Analysis for {}", output_name);
     // Lexical Analysis
-    let lexer = Lexer::new(&source_file);
+    let lexer = Lexer::new(source_file);
     let tokens: Vec<_> = lexer.collect::<Result<Vec<_>, _>>()?;
     tokens.iter().for_each(|t| debug!("{}", t));
 
@@ -139,7 +139,7 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
     let switch_statements = collect_switch(&mut program)?;
     debug!("switch statements {:?}", switch_statements);
 
-    let ast_visualizer = ASTVisualizer::new(&source_file);
+    let ast_visualizer = ASTVisualizer::new(source_file);
     let ast_viz = ast_visualizer.visualize(&program);
     debug!("AST: \n{}", ast_viz);
 
@@ -166,7 +166,7 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
 
     let buf = generator
         .emit_assmebly()
-        .map_err(|_| CompilerError::SystemError {
+        .map_err(|_| CompilerError::System {
             kind: error::SystemErrorKind::AssemblyGeneration,
         })?;
     let path = format!("{}.s", output_name);

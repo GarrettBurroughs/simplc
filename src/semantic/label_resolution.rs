@@ -51,17 +51,13 @@ impl Visitor for LabelResolver {
             return;
         }
 
-        match &mut statement.node {
-            Statement::Label(label, _) => {
-                *label = format!("L{}.{}", self.current_fn, label);
-                if self.label_set.contains(label) {
-                    self.error =
-                        semantic_error(statement.span, AlreadyDeclaredLabel(label.clone()));
-                }
-                trace!("Found label: {}", label);
-                self.label_set.insert(label.to_string());
+        if let Statement::Label(label, _) = &mut statement.node {
+            *label = format!("L{}.{}", self.current_fn, label);
+            if self.label_set.contains(label) {
+                self.error = semantic_error(statement.span, AlreadyDeclaredLabel(label.clone()));
             }
-            _ => {}
+            trace!("Found label: {}", label);
+            self.label_set.insert(label.to_string());
         }
         walk_statement(self, statement);
     }
@@ -76,7 +72,7 @@ pub struct GotoResolver {
 impl GotoResolver {
     pub fn new(label_set: HashSet<String>) -> Self {
         GotoResolver {
-            label_set: label_set,
+            label_set,
             error: None,
             current_fn: String::new(),
         }
@@ -102,15 +98,11 @@ impl Visitor for GotoResolver {
         if self.error.is_some() {
             return;
         }
-
-        match &mut statement.node {
-            Statement::Goto(label) => {
-                *label = format!("L{}.{}", self.current_fn, label);
-                if !self.label_set.contains(label) {
-                    self.error = semantic_error(statement.span, UndeclaredLabel(label.clone()));
-                }
+        if let Statement::Goto(label) = &mut statement.node {
+            *label = format!("L{}.{}", self.current_fn, label);
+            if !self.label_set.contains(label) {
+                self.error = semantic_error(statement.span, UndeclaredLabel(label.clone()));
             }
-            _ => {}
         }
         walk_statement(self, statement);
     }
