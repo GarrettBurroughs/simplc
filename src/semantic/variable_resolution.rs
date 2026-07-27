@@ -122,7 +122,7 @@ impl Visitor for VariableResolver {
             .unwrap()
             .insert(name.clone(), (name.clone(), Linkage::External));
 
-        if body.is_some() {
+        if let Some(body) = body {
             trace!("Entering function: {}", name);
             self.current_function = name.clone();
             self.function_mappings.insert(name.clone(), HashSet::new());
@@ -140,8 +140,21 @@ impl Visitor for VariableResolver {
                 }
             }
 
-            walk_function_declaration(self, function);
+            // We don't want to create a new scope on function blocks
+            walk_block(self, body);
             self.end_scope();
+        } else {
+            // The only rule for function decls a this stage is that they need to have unique variable names
+            let mut args = HashSet::new();
+            for arg in arguments {
+                if args.contains(arg) {
+                    self.error = semantic_error(
+                        function.span, 
+                        SemanticErrorKind::MultipleVariableDefinition(arg.clone())
+                    )
+                }
+                args.insert(arg);
+            }
         }
     }
 
