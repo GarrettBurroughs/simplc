@@ -16,7 +16,8 @@ use crate::{
     frontend::{ast_visualizer::ASTVisualizer, lexer::Lexer, parser::Parser},
     semantic::{
         label_resolution::resolve_labels, loop_labeling::label_loops,
-        switch_collection::collect_switch, variable_resolution::resolve_variables,
+        switch_collection::collect_switch, type_checking::check_types,
+        variable_resolution::resolve_variables,
     },
     sourcemap::SourceFile,
 };
@@ -130,14 +131,20 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
     info!("Running variable resolution for {}", output_name);
     let variables = resolve_variables(&mut program)?;
     debug!("Symbol Table: {:?}", variables);
+
     info!("Running label resolution for {}", output_name);
     let labels = resolve_labels(&mut program)?;
     debug!("Label Table: {:?}", labels);
+
     info!("Running loop labeling for {}", output_name);
     label_loops(&mut program)?;
 
+    info!("Running switch collection for {}", output_name);
     let switch_statements = collect_switch(&mut program)?;
     debug!("switch statements {:?}", switch_statements);
+
+    info!("Running type checking for {}", output_name);
+    check_types(&mut program);
 
     let ast_visualizer = ASTVisualizer::new(source_file);
     let ast_viz = ast_visualizer.visualize(&program);
