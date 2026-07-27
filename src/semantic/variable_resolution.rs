@@ -24,10 +24,15 @@ enum Linkage {
 }
 
 pub struct VariableResolver {
+    // Maps a function name to the variables that are in scope for that function
     function_mappings: HashMap<String, HashSet<String>>,
+    // stack of variable name -> resolved name + linkage
     scopes: Vec<HashMap<String, (String, Linkage)>>,
+    // Some if the resolver has encountered an error, none otherwise
     error: Option<CompilerError>,
+    // The current function the resolver is in
     current_function: String,
+    // Counter for generating unique variable names
     counter: u64,
 }
 
@@ -42,16 +47,20 @@ impl VariableResolver {
         }
     }
 
+    // Creates a new variable scope
     fn begin_scope(&mut self) {
         trace!("Beginning new variable scope");
         self.scopes.push(HashMap::new());
     }
 
+    // Ends the current variable scope
     fn end_scope(&mut self) {
         let s = self.scopes.pop();
         trace!("Ending variable scope: {:?}", s);
     }
 
+    // Returns the variable, along with it's unique name if it is is in scope
+    // Returns None if the variable is not in scope
     fn defined_in_scope(&self, name: &str) -> Option<&(String, Linkage)> {
         return self.scopes.last().unwrap().get(name);
     }
@@ -65,6 +74,8 @@ impl VariableResolver {
         None
     }
 
+    // Declares a new variable
+    // variable names are unique with an added id. ex: x -> x_0
     fn declare(&mut self, name: String) -> String {
         let unique_name = format!("{}_{}", name, self.counter);
         self.counter += 1;
@@ -94,6 +105,8 @@ impl Visitor for VariableResolver {
     fn visit_function_declaration(&mut self, function: &mut ASTNode<FunctionDeclaration>) {
         let FunctionDeclaration::FunctionDeclaration(name, arguments, body) = &mut function.node;
 
+
+        // Function names cannot conflict with other names in scope if they don't have external linkage
         if let Some(ident) = self.defined_in_scope(name) {
             if let Linkage::None = ident.1 {
                 self.error = semantic_error(
@@ -103,30 +116,33 @@ impl Visitor for VariableResolver {
             }
         }
 
+        // Add the function to the current scope with external linkage
         self.scopes
             .last_mut()
             .unwrap()
             .insert(name.clone(), (name.clone(), Linkage::External));
 
-        trace!("Entering function: {}", name);
-        self.current_function = name.clone();
-        self.function_mappings.insert(name.clone(), HashSet::new());
-        self.begin_scope();
-        for arg in arguments {
-            if self.defined_in_scope(arg).is_some() {
-                self.error = semantic_error(
-                    function.span,
-                    SemanticErrorKind::MultipleVariableDefinition(arg.clone()),
-                );
-            } else {
-                trace!("Found variable in function declaration: {}", arg);
-                let unique_name = self.declare(arg.clone());
-                *arg = unique_name;
+        if body.is_some() {
+            trace!("Entering function: {}", name);
+            self.current_function = name.clone();
+            self.function_mappings.insert(name.clone(), HashSet::new());
+            self.begin_scope();
+            for arg in arguments {
+                if self.defined_in_scope(arg).is_some() {
+                    self.error = semantic_error(
+                        function.span,
+                        SemanticErrorKind::MultipleVariableDefinition(arg.clone()),
+                    );
+                } else {
+                    trace!("Found variable in function declaration: {}", arg);
+                    let unique_name = self.declare(arg.clone());
+                    *arg = unique_name;
+                }
             }
-        }
 
-        walk_function_declaration(self, function);
-        self.end_scope();
+            walk_function_declaration(self, function);
+            self.end_scope();
+        }
     }
 
     fn visit_block(&mut self, block: &mut ASTNode<Block>) {
