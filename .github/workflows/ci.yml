@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "development" ]
+  pull_request:
+    branches: [ "main", "development" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt-and-clippy:
+    name: Format & Clippy Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLVM
+        id: install-llvm
+        uses: ZhongRuoyu/setup-llvm@v0
+        with:
+          llvm-version: 18
+      - name: Ensure Rust components
+        run: rustup component add clippy rustfmt
+      - name: Check Formatting
+        run: cargo fmt --check
+      - name: Run Clippy
+        env:
+          LLVM_SYS_181_PREFIX: ${{ steps.install-llvm.outputs.llvm-path }}
+        run: cargo clippy --all-targets -- -D warnings
+
+  tests:
+    name: Cargo Test
+    runs-on: ubuntu-latest
+    # On 'development', tests run for visibility but failures do NOT fail the presubmit check.
+    # On 'main', tests MUST pass.
+    continue-on-error: ${{ github.base_ref == 'development' || github.ref == 'refs/heads/development' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLVM
+        id: install-llvm
+        uses: ZhongRuoyu/setup-llvm@v0
+        with:
+          llvm-version: 18
+      - name: Run tests
+        env:
+          LLVM_SYS_181_PREFIX: ${{ steps.install-llvm.outputs.llvm-path }}
+        run: cargo test --verbose
