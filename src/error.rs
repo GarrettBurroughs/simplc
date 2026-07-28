@@ -1,7 +1,7 @@
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
-use crate::frontend::tokens::Token;
+use crate::{frontend::tokens::Token, semantic::type_checking::Type};
 
 #[allow(unused)]
 #[derive(Error, Debug, Diagnostic)]
@@ -52,6 +52,12 @@ pub enum ParseErrorKind {
 pub enum SemanticErrorKind {
     #[error("{0} declared multiple times in the same scope")]
     MultipleVariableDefinition(String),
+
+    #[error("{0} has conflicting definitions")]
+    MultipleFunctionDefinition(String),
+
+    #[error("invalid type got: {got} expected: {expected}")]
+    InvalidType { got: Type, expected: Type },
 
     #[error("undeclared variable: {0}")]
     UndeclaredVariable(String),
