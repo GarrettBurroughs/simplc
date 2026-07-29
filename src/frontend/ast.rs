@@ -102,7 +102,7 @@ impl Expression {
     pub fn evaluate_const(&self) -> i32 {
         match &self {
             Expression::IntLiteral(val) => *val,
-            Expression::BinaryExpr(op, rhs, lhs) => {
+            Expression::BinaryExpr(op, lhs, rhs) => {
                 let lhs = lhs.node.evaluate_const();
                 let rhs = rhs.node.evaluate_const();
                 match op {
