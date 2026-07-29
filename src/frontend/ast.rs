@@ -127,6 +127,23 @@ impl Expression {
                     _ => panic!("Invalid const expr"),
                 }
             }
+            Expression::UnaryExpr(op, val) => {
+                let val = val.node.evaluate_const();
+
+                // <unop>                    ::= "-" | "~" | "!" | <increment>
+                match op {
+                    Token::Minus => -val,
+                    Token::BitwiseCompliment => !val,
+                    Token::Not => {
+                        if val == 0 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    _ => panic!("Invalid const expr"),
+                }
+            }
             _ => panic!("Invalid const expr"),
         }
     }
