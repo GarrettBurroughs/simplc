@@ -89,7 +89,7 @@ impl Visitor for TypeChecker {
                 );
                 return;
             }
-            def.defined
+            def.defined || body.is_some()
         } else {
             body.is_some()
         };
