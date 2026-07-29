@@ -144,7 +144,9 @@ fn run(source_file: &SourceFile, output_name: &str, args: Args) -> Result<(), Co
     debug!("switch statements {:?}", switch_statements);
 
     info!("Running type checking for {}", output_name);
-    check_types(&mut program);
+    let symbol_table = check_types(&mut program)?;
+
+    debug!("symbol table {:?}", symbol_table);
 
     let ast_visualizer = ASTVisualizer::new(source_file);
     let ast_viz = ast_visualizer.visualize(&program);
