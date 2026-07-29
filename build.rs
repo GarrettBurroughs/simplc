@@ -3,14 +3,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const TEST_DIR: &str = "tests/chapter_tests";
+const TEST_DIR: &str = "tests";
 const MAX_CHAPTER: u8 = 9;
 fn main() {
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = PathBuf::from(out_dir).join("generated_tests.rs");
     let mut out = String::new();
 
-    println!("cargo:rerun-if-changed=tests/chapter_tests");
+    println!("cargo:rerun-if-changed=tests");
 
     visit_test_files(Path::new(TEST_DIR), &mut out).unwrap();
     fs::write(&dest_path, out).unwrap();
@@ -46,7 +46,7 @@ fn generate_test(path: &Path, out: &mut String) -> io::Result<()> {
         .replace("-", "_")
         .replace(".", "_");
     let path_str = path.display().to_string().replace("\\", "/");
-    let ignore = path.iter().nth(2).is_some_and(|n| {
+    let ignore = path.iter().any(|n| {
         n.to_str()
             .and_then(|s| s.strip_prefix("chapter_"))
             .and_then(|s| s.parse::<u8>().ok())

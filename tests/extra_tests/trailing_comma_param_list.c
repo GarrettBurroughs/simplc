@@ -1,0 +1,9 @@
+// test-directive invalid
+
+int foo(int a,) {
+    return a;
+}
+
+int main(void) {
+    return foo(1);
+}
