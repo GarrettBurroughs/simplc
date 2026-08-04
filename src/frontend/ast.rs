@@ -102,7 +102,7 @@ impl Expression {
     pub fn evaluate_const(&self) -> i32 {
         match &self {
             Expression::IntLiteral(val) => *val,
-            Expression::BinaryExpr(op, rhs, lhs) => {
+            Expression::BinaryExpr(op, lhs, rhs) => {
                 let lhs = lhs.node.evaluate_const();
                 let rhs = rhs.node.evaluate_const();
                 match op {
@@ -124,6 +124,23 @@ impl Expression {
                     Token::GreaterThanEq => (lhs >= rhs) as i32,
                     Token::LessThan => (lhs < rhs) as i32,
                     Token::LessThanEq => (lhs <= rhs) as i32,
+                    _ => panic!("Invalid const expr"),
+                }
+            }
+            Expression::UnaryExpr(op, val) => {
+                let val = val.node.evaluate_const();
+
+                // <unop>                    ::= "-" | "~" | "!" | <increment>
+                match op {
+                    Token::Minus => -val,
+                    Token::BitwiseCompliment => !val,
+                    Token::Not => {
+                        if val == 0 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
                     _ => panic!("Invalid const expr"),
                 }
             }

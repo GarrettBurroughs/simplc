@@ -1,4 +1,9 @@
-use inkwell::{IntPredicate, builder::BuilderError, values::BasicValueEnum};
+use inkwell::{
+    IntPredicate,
+    basic_block::BasicBlock,
+    builder::BuilderError,
+    values::{BasicValueEnum, IntValue},
+};
 
 use crate::{
     codegen::{CodeGen, CodeGenerator},
@@ -273,24 +278,35 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<Statement> {
                 }
             }
             Statement::Switch(expr, stmt, label) => {
+                let switch_label = label.clone().expect("switch label should have a value");
                 let control = expr
                     .codegen(codegen)?
                     .expect("switch control to have a value")
                     .into_int_value();
 
-                let default_block = codegen.get_basic_block(&format!(
-                    "{}_default",
-                    label.clone().expect("label should have a value")
-                ));
+                let default_block = codegen.get_basic_block(&format!("{}_default", switch_label));
 
-                codegen.builder.build_switch(
-                    control,
-                    default_block,
-                    codegen
-                        .switch_map
-                        .get(&label.clone().unwrap_or_default())
-                        .expect("switch map to have cases"),
-                )?;
+                let switch_info = codegen
+                    .switch_statements
+                    .get(&switch_label)
+                    .expect("switch to exist")
+                    .clone();
+
+                let cases: Vec<(IntValue<'ctx>, BasicBlock<'ctx>)> = switch_info
+                    .cases
+                    .iter()
+                    .map(|(case_label, val)| {
+                        let case_bb = codegen.get_basic_block(case_label);
+                        (
+                            codegen.context.i64_type().const_int(*val as u64, false),
+                            case_bb,
+                        )
+                    })
+                    .collect();
+
+                codegen
+                    .builder
+                    .build_switch(control, default_block, &cases)?;
 
                 let current_fn = codegen
                     .builder

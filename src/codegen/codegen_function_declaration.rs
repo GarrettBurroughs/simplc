@@ -19,8 +19,6 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<FunctionDeclaration> {
             // - Initializes all local variables within the function (scoping is handled in
             // the semantic passes)
             //
-            // - Creates all basic blocks for case statements within the function
-            //
             // - Creates a unified return block as an exit point and variable for return value
             FunctionDeclaration::FunctionDeclaration(name, arguments, Some(block)) => {
                 let i64_type = codegen.context.i64_type();
@@ -68,21 +66,6 @@ impl<'ctx> CodeGenerator<'ctx> for ASTNode<FunctionDeclaration> {
                     param.set_name(&arguments[i]);
                     let arg = codegen.variable_map.get(&arguments[i]).unwrap();
                     codegen.builder.build_store(*arg, param)?;
-                }
-
-                // Create blocks for all case statemnets
-                for (label, switch) in codegen.switch_statements.clone() {
-                    let cases = switch
-                        .cases
-                        .iter()
-                        .map(|(l, v)| {
-                            (
-                                codegen.context.i64_type().const_int(*v as u64, false),
-                                codegen.get_basic_block(l),
-                            )
-                        })
-                        .collect();
-                    codegen.switch_map.insert(label.clone(), cases);
                 }
 
                 block.codegen(codegen)?;
